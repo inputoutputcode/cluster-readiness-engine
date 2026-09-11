@@ -6,9 +6,11 @@ FROM ${BASE_IMAGE}
 ARG NCCL_TESTS_REF=v2.16.9
 ARG MPI_HOME=/usr/local/mpi
 ARG NCCL_HOME=/usr
+ARG TRANSFORMERS_VERSION=4.57.1
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git make g++ openssh-server ibverbs-utils libibverbs-dev iproute2 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m pip install --no-cache-dir "transformers==${TRANSFORMERS_VERSION}"
 RUN test -x "${MPI_HOME}/bin/mpicxx" \
     && git clone --depth 1 --branch "${NCCL_TESTS_REF}" \
       https://github.com/NVIDIA/nccl-tests.git /opt/nccl-tests \
@@ -23,4 +25,4 @@ COPY gb10_llama32_1b.py /usr/local/bin/gb10-llama32-1b.py
 RUN nvcc -O3 -std=c++17 -gencode=arch=compute_121,code=sm_121 \
       /tmp/gb10_c2c.cu -o /usr/local/bin/gb10-c2c \
     && chmod 0755 /usr/local/bin/gb10-c2c /usr/local/bin/gb10-llama32-1b.py \
-    && python3 -c 'import torch, transformers'
+    && python3 -c 'import torch; from transformers import LlamaConfig, LlamaForCausalLM'
