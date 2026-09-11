@@ -113,6 +113,24 @@ type CategoryResources struct {
 	Requests *CategoryResourceList `json:"requests,omitempty"`
 }
 
+// NICResource specifies one Kubernetes extended resource exposed by an RDMA
+// device plugin. Extended resources are integer-valued, so quantity is a
+// positive whole number.
+type NICResource struct {
+	// name is the fully qualified Kubernetes extended resource name.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/[a-zA-Z0-9]([-A-Za-z0-9_.]{0,61}[a-zA-Z0-9])?$`
+	// +kubebuilder:validation:XValidation:rule="!self.contains('kubernetes.io/') && !self.startsWith('k8s.io/') && !self.contains('.k8s.io/')",message="name must not use the reserved kubernetes.io or k8s.io domains"
+	Name string `json:"name"`
+
+	// quantity is the number of allocation units requested from this resource
+	// on every workload node.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=1
+	Quantity int32 `json:"quantity"`
+}
+
 // CategoryOptions holds configuration for catalog workloads.
 // Used as global defaults in CertificationSpec (embedded inline)
 // and as per-category overrides in CertificateCategory.Options.
@@ -185,6 +203,17 @@ type CategoryOptions struct {
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/[a-zA-Z0-9]([-A-Za-z0-9_.]{0,61}[a-zA-Z0-9])?$`
 	// +kubebuilder:validation:XValidation:rule="!self.contains('kubernetes.io/') && !self.startsWith('k8s.io/') && !self.contains('.k8s.io/')",message="nicResourceName must not use the reserved kubernetes.io or k8s.io domains"
 	NicResourceName *string `json:"nicResourceName,omitempty"`
+
+	// nicResources requests multiple Kubernetes extended resources from every
+	// workload node. This is intended for multi-rail clusters where each rail is
+	// advertised under a distinct device-plugin resource name. When non-empty,
+	// it takes precedence over nicResourceName and mlnxPerNode for resource
+	// injection. A per-category list replaces the global list.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	NicResources []NICResource `json:"nicResources,omitempty"`
 
 	// resources overrides the CPU and memory resources of training workload
 	// containers. Training entries default to DGX-class sizing (limits:

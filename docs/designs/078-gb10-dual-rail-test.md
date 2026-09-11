@@ -1,6 +1,6 @@
 # ADR-078: GB10 Dual-Rail Cluster Test
 
-Status: Proposed for a future PR. The local prototype is implemented on
+Status: Proposed for a future PR. The local implementation is on
 `gb10support`; this draft does not represent project approval.
 
 ## Context
@@ -24,11 +24,9 @@ The GB200/GB300 on-prem overrides do not match GB10.
 
 ## Decision
 
-Propose an opt-in, site-specific two-node NCCL all-reduce test using CRE's
-existing Certification renderer and Workflow API. Keep node names, resource
-names, network interfaces, image, namespace, runtime class, and SSH port
-configurable in the test assets. Establish successful RDMA operation before
-selecting general GB10 catalog defaults or changing the CRD schema.
+Add a reusable multi-resource Certification option and an on-prem GB10 catalog
+profile based on the settings validated on the two-node Spark cluster. Keep the
+Workflow overlay for single-rail diagnosis.
 
 ## Implementation
 
@@ -68,22 +66,24 @@ The local prototype under `tools/gb10/` provides:
    completed before the catalog's 30-second interval and its launcher pod was
    cleaned up before any bandwidth rows were captured.
 
-The transformed Workflow is the object to apply. Applying the source
-Certification directly would omit the site-specific network configuration.
+The source Certification is now the primary object to apply. The controller
+resolves its GB10 catalog override into the same site-specific worker and MPI
+configuration proven by the diagnostic Workflow overlay.
 
 ## Rationale
 
-The existing Workflow API can carry the necessary pod and MPI settings.
-An explicit site test makes the two shared resource pools representable
-without widening the public API or hardcoding this site's NIC names into
-the default catalog. The reduced message range provides an initial
-functional test before longer performance runs.
+The existing Workflow API can carry the necessary pod and MPI settings. A
+small, typed Certification API addition makes distinct device-plugin resource
+pools representable without hardcoding their names into the catalog. The GB10
+catalog override supplies the platform wiring that the existing generic
+on-prem profiles cannot infer.
 
 ## Consequences
 
-The first deliverable validates a CRE Workflow and its BandwidthMeasurement,
-not end-to-end Certification status aggregation. General GB10 Certification
-support remains a subsequent decision informed by hardware results.
+The Certification path now exercises status aggregation, threshold validation,
+and `nvcrectl certification report`. It requires a manager and CRD built from
+this branch. The released manager cannot interpret the new API or catalog
+profile.
 
 The test requires CRE, Kubeflow Trainer, JobSet, and the GPU/RDMA device
 plugins to be installed. Host-networked workers require an available test
@@ -100,8 +100,8 @@ No unmeasured performance threshold is supplied.
 - Set mlnxPerNode to two: this cannot request two distinct resource names.
 - Extend the GB200/GB300 selectors: this conflates different platform and
   interconnect assumptions.
-- Immediately add a multi-resource CRD field: defer until testing confirms
-  which runtime settings are required and which should become public API.
+- Continue with the Workflow-only overlay: this cannot drive Certification
+  status aggregation, threshold evaluation, or `nvcrectl certification report`.
 - Use TCP only: useful for troubleshooting, but insufficient to validate
   the requested RoCE links.
 
@@ -110,10 +110,11 @@ No unmeasured performance threshold is supplied.
 The user authorized local implementation without ADR approval and requested
 retaining this draft for a later PR. Project acceptance is still pending.
 
-Local verification passed: lint, build, the unit/integration suite, and all
-six GB10 tests. Helm rendering tests were skipped because Helm was unavailable.
-The arm64 workload image has not been built here, and live GPU/RDMA tests
-remain to be run on the target nodes. No golden files or CRD schemas changed.
+Local verification passed: generated manifests and deepcopy code, lint, build,
+the complete unit/integration suite, and all six GB10 diagnostic tests. The
+Certification CRD schema and intentional render/integration goldens changed.
+The arm64 workload image and live GPU/RDMA execution remain target-cluster
+artifacts and cannot be reproduced on this development host.
 
 Live testing has confirmed MPI launch, pod DNS, SSH on both nodes, both GB10s,
 and active 200 Gb/s rail-A HCAs. The external HPC-X NCCL RDMA plugin initialized
@@ -123,10 +124,12 @@ running locally in the host-networked launcher on spark-38fc rather than in its
 RDMA-allocated worker. Moving the launcher to the pod network placed both ranks
 correctly, after which OpenMPI selected an unreachable Docker bridge address
 for rank-to-rank TCP. A worker environment pin did not propagate through the
-SSH-launched rank; the equivalent mpirun MCA argument now needs validation.
-Before a PR, record the image/driver versions, single-rail and dual-rail
-results, transport/GDR diagnostics, and counter deltas. Use that evidence to
-review the scope and defaults proposed here.
+SSH-launched rank; the equivalent mpirun MCA argument fixed that path. The
+resulting runs completed successfully with peak bus bandwidth of 13.93 GB/s on
+rail A, 13.89 GB/s on rail B, and 22.36 GB/s with both rails selected. Before a
+PR, record the image/driver versions, transport/GDR diagnostics, and per-port
+counter deltas. Use that evidence to review the scope and defaults proposed
+here.
 
 ## References
 

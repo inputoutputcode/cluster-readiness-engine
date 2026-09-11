@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: nvcre.nvidia.com/v1alpha1
+kind: Certification
+metadata:
+  name: gb10-cert
+spec:
+  target:
+    nodeNames:
+      - spark-1ac4
+      - spark-38fc
+    nodeSelector:
+      nvidia.com/gpu.product: NVIDIA-GB10
+  nodesPerJob: 2
+  gpusPerNode: 1
+  enableMNNVL: false
+  image: gb10-nccl:local
+  nicResources:
+    - name: rdma/rdma_shared_device_a
+      quantity: 1
+    - name: rdma/rdma_shared_device_b
+      quantity: 1
+  maxBytes: 1G
+  numIterations: 20
+  numCycles: 2
+  thresholds:
+    busBandwidthGBps: value >= 18
+  categories:
+    - domain: communication
+      variant: nccl-all-reduce

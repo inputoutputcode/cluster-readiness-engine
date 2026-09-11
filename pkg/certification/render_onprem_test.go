@@ -38,6 +38,10 @@ type onpremContainer struct {
 type onpremReplicatedJob struct {
 	Dependency    string `json:"dependency"`
 	ReplicatedJob string `json:"replicatedJob"`
+	HostNetwork   bool   `json:"hostNetwork,omitempty"`
+	DNSPolicy     string `json:"dnsPolicy,omitempty"`
+	RuntimeClass  string `json:"runtimeClass,omitempty"`
+	ReadinessPort string `json:"readinessPort,omitempty"`
 	// Tolerations renders each toleration in declaration order as
 	// "key=value:effect"; the on-prem override contributes the arm64 and GPU
 	// taints, and their absence on a control case is as load-bearing as their
@@ -50,6 +54,7 @@ type onpremReplicatedJob struct {
 type onpremWorkflow struct {
 	Workflow        string   `json:"workflow"`
 	DependencyKinds []string `json:"dependencyKinds"`
+	SampleInterval  string   `json:"sampleInterval,omitempty"`
 	// TrainerArgs is the resolved jobTemplate trainer args. For the MPI
 	// collectives this is where the on-prem override's env rides as -x pairs,
 	// and where NCCL_IB_HCA/UCX_NET_DEVICES must NOT appear.
@@ -129,6 +134,11 @@ func projectOnPremOverride(wf *nvcrev1alpha1.Workflow) (onpremWorkflow, error) {
 		TrainerEnv:      []string{},
 		ReplicatedJobs:  []onpremReplicatedJob{},
 	}
+	if bm := wf.Spec.JobTemplate.Spec.BandwidthMeasurement; bm != nil && bm.SampleInterval != nil {
+		if interval := bm.SampleInterval.Duration.String(); interval != "30s" {
+			out.SampleInterval = interval
+		}
+	}
 
 	if tj := wf.Spec.JobTemplate.Spec.Workload.TrainJob; tj != nil && tj.Trainer != nil {
 		out.TrainerArgs = append(out.TrainerArgs, tj.Trainer.Args...)
@@ -164,14 +174,24 @@ func projectOnPremOverride(wf *nvcrev1alpha1.Workflow) (onpremWorkflow, error) {
 			projected := onpremReplicatedJob{
 				Dependency:    rt.Name,
 				ReplicatedJob: rj.Name,
+				HostNetwork:   podSpec.HostNetwork,
+				DNSPolicy:     string(podSpec.DNSPolicy),
 				Tolerations:   []string{},
 				Containers:    []onpremContainer{},
+			}
+			if podSpec.RuntimeClassName != nil {
+				projected.RuntimeClass = *podSpec.RuntimeClassName
 			}
 			for _, tol := range podSpec.Tolerations {
 				projected.Tolerations = append(projected.Tolerations,
 					fmt.Sprintf("%s=%s:%s", tol.Key, tol.Value, tol.Effect))
 			}
 			for _, c := range podSpec.Containers {
+				if c.Name == "node" && c.ReadinessProbe != nil && c.ReadinessProbe.TCPSocket != nil {
+					if port := c.ReadinessProbe.TCPSocket.Port.String(); port != "22" {
+						projected.ReadinessPort = port
+					}
+				}
 				pc := onpremContainer{Name: c.Name, Resources: []string{}, Env: []string{}}
 				for name, qty := range c.Resources.Limits {
 					pc.Resources = append(pc.Resources, fmt.Sprintf("limits/%s=%s", name, qty.String()))

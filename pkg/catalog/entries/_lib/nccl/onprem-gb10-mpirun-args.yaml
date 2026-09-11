@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+- -N
+- "{{ .GpusPerNode }}"
+- --allow-run-as-root
+- --bind-to
+- none
+- --mca
+- plm_rsh_args
+- -p 2222 -o StrictHostKeyChecking=no
+- --mca
+- pml
+- ob1
+- --mca
+- btl
+- self,tcp
+- --mca
+- btl_tcp_if_include
+- enp1s0f1np1
+- -x
+- NCCL_DEBUG=INFO
+- -x
+- NCCL_DEBUG_SUBSYS=INIT,NET,GRAPH
+- -x
+- NCCL_MNNVL_ENABLE={{ if .EnableMNNVL }}1{{ else }}0{{ end }}
+- -x
+- NCCL_NET=IB
+- -x
+- NCCL_NET_PLUGIN=none
+- -x
+- NCCL_IB_DISABLE=0
+- -x
+- NCCL_IB_HCA==rocep1s0f1:1,roceP2p1s0f1:1
+- -x
+- NCCL_SOCKET_IFNAME==enp1s0f1np1
+- -x
+- NCCL_SOCKET_FAMILY=AF_INET
+- -x
+- NCCL_CROSS_NIC=0

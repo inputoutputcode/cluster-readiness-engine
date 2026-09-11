@@ -100,6 +100,10 @@ type TemplateData struct {
 	// block. Templates use: {{- if .NicResourceName }} ... {{ .NicResourceName }}
 	NicResourceName string
 
+	// NicResources are explicit extended-resource requests. Templates use each
+	// entry's Name and Quantity when the list is non-empty.
+	NicResources []nvcrev1alpha1.NICResource
+
 	// TrainingCPULimit is the CPU limit for training containers
 	// (always non-empty after defaults). Templates use: {{ .TrainingCPULimit }}
 	TrainingCPULimit string
@@ -435,6 +439,7 @@ func buildTemplateData(config BuildConfig, configArch, variant string, meta entr
 		GpusPerNode:        config.GpusPerNode,
 		MlnxPerNode:        config.MlnxPerNode,
 		NicResourceName:    config.NicResourceName,
+		NicResources:       config.NicResources,
 		EnableMNNVL:        config.EnableMNNVL,
 		EnableCheckpoint:   config.EnableCheckpoint,
 		MaxSteps:           config.MaxSteps,

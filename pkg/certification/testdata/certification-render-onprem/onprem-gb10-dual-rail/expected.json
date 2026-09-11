@@ -1,0 +1,107 @@
+[
+  {
+    "workflow": "gb10-cert-communication-n-3d409",
+    "dependencyKinds": [
+      "TrainingRuntime"
+    ],
+    "sampleInterval": "1s",
+    "trainerArgs": [
+      "-N",
+      "1",
+      "--allow-run-as-root",
+      "--bind-to",
+      "none",
+      "--mca",
+      "plm_rsh_args",
+      "-p 2222 -o StrictHostKeyChecking=no",
+      "--mca",
+      "pml",
+      "ob1",
+      "--mca",
+      "btl",
+      "self,tcp",
+      "--mca",
+      "btl_tcp_if_include",
+      "enp1s0f1np1",
+      "-x",
+      "NCCL_DEBUG=INFO",
+      "-x",
+      "NCCL_DEBUG_SUBSYS=INIT,NET,GRAPH",
+      "-x",
+      "NCCL_MNNVL_ENABLE=0",
+      "-x",
+      "NCCL_NET=IB",
+      "-x",
+      "NCCL_NET_PLUGIN=none",
+      "-x",
+      "NCCL_IB_DISABLE=0",
+      "-x",
+      "NCCL_IB_HCA==rocep1s0f1:1,roceP2p1s0f1:1",
+      "-x",
+      "NCCL_SOCKET_IFNAME==enp1s0f1np1",
+      "-x",
+      "NCCL_SOCKET_FAMILY=AF_INET",
+      "-x",
+      "NCCL_CROSS_NIC=0",
+      "/usr/local/bin/all_reduce_perf_mpi",
+      "-b",
+      "8",
+      "-e",
+      "1G",
+      "-f",
+      "2",
+      "-n",
+      "20",
+      "-N",
+      "2"
+    ],
+    "trainerEnv": [],
+    "replicatedJobs": [
+      {
+        "dependency": "nccl-all-reduce-runtime",
+        "replicatedJob": "node",
+        "hostNetwork": true,
+        "dnsPolicy": "ClusterFirstWithHostNet",
+        "runtimeClass": "nvidia",
+        "readinessPort": "2222",
+        "tolerations": [
+          "kubernetes.io/arch=arm64:NoSchedule",
+          "nvidia.com/gpu=:NoSchedule"
+        ],
+        "containers": [
+          {
+            "name": "node",
+            "resources": [
+              "limits/nvidia.com/gpu=1",
+              "limits/rdma/rdma_shared_device_a=1",
+              "limits/rdma/rdma_shared_device_b=1",
+              "requests/nvidia.com/gpu=1",
+              "requests/rdma/rdma_shared_device_a=1",
+              "requests/rdma/rdma_shared_device_b=1"
+            ],
+            "env": []
+          }
+        ]
+      },
+      {
+        "dependency": "nccl-all-reduce-runtime",
+        "replicatedJob": "launcher",
+        "runtimeClass": "nvidia",
+        "tolerations": [
+          "kubernetes.io/arch=arm64:NoSchedule",
+          "nvidia.com/gpu=:NoSchedule"
+        ],
+        "containers": [
+          {
+            "name": "node",
+            "resources": [
+              "limits/cpu=2",
+              "limits/memory=1Gi"
+            ],
+            "env": []
+          }
+        ]
+      }
+    ]
+  }
+]

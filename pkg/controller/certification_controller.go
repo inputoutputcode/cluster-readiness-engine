@@ -451,12 +451,15 @@ func (r *CertificationReconciler) createWorkflowForCategory(ctx context.Context,
 	// arch-filtered set nodesPerJob resolution uses). Zero or multiple
 	// candidates means nothing is injected and a Normal event says why;
 	// detection never guesses (ADR-075).
-	nicDetected := resolveNICResourceName(
-		opts.NicResourceName, detectedPlatform, gpuArch, archNodes, mlnxPerNode)
-	nicResourceName := nicDetected.Name
-	if nicDetected.Ran && nicResourceName == "" {
-		r.normalf(certification, ReasonNICResourceDetection,
-			"%s/%s: %s", category.Domain, category.Variant, nicDetectionMessage(nicDetected))
+	nicResourceName := ""
+	if len(opts.NicResources) == 0 {
+		nicDetected := resolveNICResourceName(
+			opts.NicResourceName, detectedPlatform, gpuArch, archNodes, mlnxPerNode)
+		nicResourceName = nicDetected.Name
+		if nicDetected.Ran && nicResourceName == "" {
+			r.normalf(certification, ReasonNICResourceDetection,
+				"%s/%s: %s", category.Domain, category.Variant, nicDetectionMessage(nicDetected))
+		}
 	}
 
 	capableNodes, err := dropUnderCapacityNodes(archNodes, category, gpusPerNode)
@@ -482,6 +485,7 @@ func (r *CertificationReconciler) createWorkflowForCategory(ctx context.Context,
 		GpusPerNode:        gpusPerNode,
 		MlnxPerNode:        mlnxPerNode,
 		NicResourceName:    nicResourceName,
+		NicResources:       opts.NicResources,
 		Resources:          opts.Resources,
 		EnableMNNVL:        enableMNNVL,
 		EnableCheckpoint:   derefBool(opts.EnableCheckpoint),
@@ -645,6 +649,7 @@ func ResolveOptions(global *nvcrev1alpha1.CategoryOptions, override *nvcrev1alph
 	if override.NicResourceName != nil {
 		resolved.NicResourceName = override.NicResourceName
 	}
+	resolved.NicResources = resolveNICResources(resolved.NicResources, override.NicResources)
 	if override.Resources != nil {
 		resolved.Resources = override.Resources
 	}
@@ -709,6 +714,13 @@ func ResolveOptions(global *nvcrev1alpha1.CategoryOptions, override *nvcrev1alph
 		resolved.SourceRepo = override.SourceRepo
 	}
 	return resolved
+}
+
+func resolveNICResources(global, override []nvcrev1alpha1.NICResource) []nvcrev1alpha1.NICResource {
+	if len(override) > 0 {
+		return override
+	}
+	return global
 }
 
 // dropUnderCapacityNodes removes nodes that cannot supply gpusPerNode before

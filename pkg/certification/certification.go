@@ -344,7 +344,7 @@ func applyWorkflowImage(cert *nvcrev1alpha1.Certification, workflows []nvcrev1al
 // controller re-resolves per category, so a per-category mlnxPerNode can
 // make a reconcile pick where this preview refused, or vice versa.
 func applyNICDetection(cert *nvcrev1alpha1.Certification, nodes []corev1.Node, platformFlag string) {
-	if len(nodes) == 0 {
+	if len(nodes) == 0 || len(cert.Spec.NicResources) > 0 {
 		return
 	}
 	platformName := controller.DetectPlatform(nodes)
@@ -443,6 +443,7 @@ func renderCertification(cert *nvcrev1alpha1.Certification, platformName string)
 			GpusPerNode:        gpusPerNode,
 			MlnxPerNode:        mlnxPerNode,
 			NicResourceName:    nicResourceName,
+			NicResources:       opts.NicResources,
 			Resources:          opts.Resources,
 			EnableMNNVL:        enableMNNVL,
 			EnableCheckpoint:   derefBoolPtr(opts.EnableCheckpoint),

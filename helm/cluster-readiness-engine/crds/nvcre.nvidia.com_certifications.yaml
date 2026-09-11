@@ -214,6 +214,46 @@ spec:
                               or k8s.io domains
                             rule: '!self.contains(''kubernetes.io/'') && !self.startsWith(''k8s.io/'')
                               && !self.contains(''.k8s.io/'')'
+                        nicResources:
+                          description: |-
+                            nicResources requests multiple Kubernetes extended resources from every
+                            workload node. This is intended for multi-rail clusters where each rail is
+                            advertised under a distinct device-plugin resource name. When non-empty,
+                            it takes precedence over nicResourceName and mlnxPerNode for resource
+                            injection. A per-category list replaces the global list.
+                          items:
+                            description: |-
+                              NICResource specifies one Kubernetes extended resource exposed by an RDMA
+                              device plugin. Extended resources are integer-valued, so quantity is a
+                              positive whole number.
+                            properties:
+                              name:
+                                description: name is the fully qualified Kubernetes
+                                  extended resource name.
+                                maxLength: 253
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/[a-zA-Z0-9]([-A-Za-z0-9_.]{0,61}[a-zA-Z0-9])?$
+                                type: string
+                                x-kubernetes-validations:
+                                - message: name must not use the reserved kubernetes.io
+                                    or k8s.io domains
+                                  rule: '!self.contains(''kubernetes.io/'') && !self.startsWith(''k8s.io/'')
+                                    && !self.contains(''.k8s.io/'')'
+                              quantity:
+                                description: |-
+                                  quantity is the number of allocation units requested from this resource
+                                  on every workload node.
+                                format: int32
+                                minimum: 1
+                                type: integer
+                            required:
+                            - name
+                            - quantity
+                            type: object
+                          maxItems: 16
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - name
+                          x-kubernetes-list-type: map
                         nodesPerJob:
                           description: |-
                             nodesPerJob is the number of nodes per job for multi-node workloads.
@@ -627,6 +667,46 @@ spec:
                     or k8s.io domains
                   rule: '!self.contains(''kubernetes.io/'') && !self.startsWith(''k8s.io/'')
                     && !self.contains(''.k8s.io/'')'
+              nicResources:
+                description: |-
+                  nicResources requests multiple Kubernetes extended resources from every
+                  workload node. This is intended for multi-rail clusters where each rail is
+                  advertised under a distinct device-plugin resource name. When non-empty,
+                  it takes precedence over nicResourceName and mlnxPerNode for resource
+                  injection. A per-category list replaces the global list.
+                items:
+                  description: |-
+                    NICResource specifies one Kubernetes extended resource exposed by an RDMA
+                    device plugin. Extended resources are integer-valued, so quantity is a
+                    positive whole number.
+                  properties:
+                    name:
+                      description: name is the fully qualified Kubernetes extended
+                        resource name.
+                      maxLength: 253
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/[a-zA-Z0-9]([-A-Za-z0-9_.]{0,61}[a-zA-Z0-9])?$
+                      type: string
+                      x-kubernetes-validations:
+                      - message: name must not use the reserved kubernetes.io or k8s.io
+                          domains
+                        rule: '!self.contains(''kubernetes.io/'') && !self.startsWith(''k8s.io/'')
+                          && !self.contains(''.k8s.io/'')'
+                    quantity:
+                      description: |-
+                        quantity is the number of allocation units requested from this resource
+                        on every workload node.
+                      format: int32
+                      minimum: 1
+                      type: integer
+                  required:
+                  - name
+                  - quantity
+                  type: object
+                maxItems: 16
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               nodesPerJob:
                 description: |-
                   nodesPerJob is the number of nodes per job for multi-node workloads.

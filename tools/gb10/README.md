@@ -1,16 +1,74 @@
 # Two-node GB10 RoCE test
 
-This local test renders the existing NCCL all-reduce catalog and applies a
-site-specific Workflow overlay. It does not require a new CRE controller or
-CRD. It tests a Workflow and its BandwidthMeasurement, not Certification status
-aggregation. Do not apply `certification.json` directly: it is input to the
-renderer and does not include the RDMA overlay.
+This directory contains the full Certification path for a two-node DGX Spark
+cluster and a lower-level Workflow overlay for single-rail diagnostics. The
+Certification path requires the CRD and manager built from `gb10support`; the
+released v0.2.0 manager does not contain the GB10 catalog profile.
 
 The defaults match spark-1ac4 and spark-38fc: one GB10 per node, two shared
 RDMA resource pools, and the interface names reported by spark-38fc. Each
 worker requests one slot per selected pool; 63 advertised slots are not 63
-physical NICs. `mlnxPerNode: 0` leaves the base catalog's NIC requests disabled;
-the overlay explicitly supplies the selected resource names.
+physical NICs. The Certification's `nicResources` list supplies both resource
+names explicitly. The diagnostic overlay selects one or both entries from the
+same list.
+
+## Run a Certification
+
+Install the generated Certification CRD and deploy a manager image built from
+this branch before using this path. The catalog is embedded in the manager, so
+installing only the branch CLI while leaving the v0.2.0 manager running is not
+enough. On spark-38fc, build and load the manager image on both k3s nodes, then
+upgrade the existing Helm release from the local chart:
+
+```bash
+make docker-build IMG=nvcre-manager:gb10
+docker save nvcre-manager:gb10 -o /tmp/nvcre-manager-gb10.tar
+sudo k3s ctr images import /tmp/nvcre-manager-gb10.tar
+scp /tmp/nvcre-manager-gb10.tar spark-1ac4:/tmp/
+ssh -t spark-1ac4 'sudo k3s ctr images import /tmp/nvcre-manager-gb10.tar'
+
+kubectl apply \
+  -f helm/cluster-readiness-engine/crds/nvcre.nvidia.com_certifications.yaml
+helm upgrade --install nvcre helm/cluster-readiness-engine \
+  --namespace nvcre \
+  --create-namespace \
+  --set manager.image.repository=nvcre-manager \
+  --set manager.image.tag=gb10 \
+  --set manager.image.pullPolicy=Never \
+  --set metrics.serviceMonitor.enabled=false
+kubectl -n nvcre rollout status deployment/nvcre-manager
+```
+
+The `-t` on the remote SSH command allocates the terminal required by `sudo`.
+If the deployment has a different name, find it with `kubectl -n nvcre get
+deployments`. Build the matching CLI, preview the exact resources against the
+live cluster, and run the Certification:
+
+```bash
+make build
+go build -o bin/nvcrectl ./cmd/nvcrectl/
+
+./bin/nvcrectl certification render \
+  --platform onprem \
+  --dry-run \
+  tools/gb10/certification.json
+
+./bin/nvcrectl certification run \
+  --cert-file tools/gb10/certification.json \
+  --wait \
+  --results-file /tmp/gb10-certification.json
+```
+
+The sample enforces the provisional dual-rail threshold observed during local
+validation: `busBandwidthGBps >= 18`. Change or remove that threshold if the
+site policy differs. Leave the Certification installed to regenerate its
+report later:
+
+```bash
+./bin/nvcrectl certification report gb10-cert \
+  -n default \
+  --results-file /tmp/gb10-certification.json
+```
 
 ## Prerequisites
 
@@ -31,8 +89,9 @@ Check the installation with `./bin/nvcrectl setup status`. If components are
 missing, follow [cluster installation](../../docs/getting-started/install.md).
 `nvcrectl setup init` installs CRE and its dependencies; when using a CLI built
 from this branch, pass `--version` with a published chart version, because the
-local development build has no matching published chart. This overlay uses
-existing APIs, so no locally built controller image is needed.
+local development build has no matching published chart. Then apply the branch
+CRD and local manager upgrade shown above. Re-running `setup init` by itself
+would restore the released manager, which does not understand `nicResources`.
 
 The optional Dockerfile builds the MPI NCCL test binary for SM 12.1 using the
 catalog's PyTorch base image. Build on a GB10 node (or an arm64 builder):
@@ -78,7 +137,7 @@ PEER_ADDRESS`. The supplied output only confirmed local link state on
 spark-38fc, not peer reachability or negotiated speed. Ensure Kubernetes pod
 DNS and the test SSH port are reachable between the nodes.
 
-## Render and run
+## Run single-rail diagnostics
 
 Run **one case at a time**. The runs share GPUs and host SSH port 2222.
 Start with rail A, then B, then both. Each has a distinct Workflow/runtime name.
@@ -140,8 +199,9 @@ and runs 20 iterations with two cycles. The GB10 overlay samples launcher logs
 every second because this small two-node test can finish before the catalog's
 30-second sampling interval. Confirm two GB10 ranks, no correctness
 errors, `NCCL_NET_PLUGIN set by environment to none`, and internal NET/IB device
-selection on both ranks in the launcher log. CRE records algBW and busBW;
-there is deliberately no unmeasured pass/fail bandwidth threshold.
+selection on both ranks in the launcher log. CRE records algBW and busBW. The
+sample Certification uses the provisional dual-rail threshold established by
+the successful test, 18 GB/s bus bandwidth.
 
 Capture port counters on both nodes immediately before and after each run:
 

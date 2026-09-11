@@ -41,6 +41,9 @@ defaults:
   gb300:
     gpusPerNode: 4
     mlnxPerNode: 8
+  gb10:
+    gpusPerNode: 1
+    mlnxPerNode: 2
 
 platformOverrides:
   oci:

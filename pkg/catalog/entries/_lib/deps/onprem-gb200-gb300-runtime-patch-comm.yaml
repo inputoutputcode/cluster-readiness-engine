@@ -23,16 +23,24 @@
             spec:
               template:
                 spec:
-{{- if .NicResourceName }}
+{{- if or .NicResources .NicResourceName }}
                   containers:
                   - name: node
                     resources:
                       limits:
                         nvidia.com/gpu: "{{ .GpusPerNode }}"
+{{- range .NicResources }}
+                        {{ .Name }}: "{{ .Quantity }}"
+{{- else }}
                         {{ .NicResourceName }}: "{{ .MlnxPerNode }}"
+{{- end }}
                       requests:
                         nvidia.com/gpu: "{{ .GpusPerNode }}"
+{{- range .NicResources }}
+                        {{ .Name }}: "{{ .Quantity }}"
+{{- else }}
                         {{ .NicResourceName }}: "{{ .MlnxPerNode }}"
+{{- end }}
 {{- end }}
                   tolerations:
                   - key: kubernetes.io/arch

@@ -53,6 +53,11 @@ type BuildConfig struct {
 	// comes from MlnxPerNode.
 	NicResourceName string
 
+	// NicResources are explicit extended-resource requests for multi-rail RDMA
+	// deployments. When non-empty, templates use them instead of the legacy
+	// NicResourceName/MlnxPerNode pair.
+	NicResources []nvcrev1alpha1.NICResource
+
 	// Resources overrides the CPU and memory of training containers.
 	// Nil (or nil sub-fields) means the training entries keep their
 	// DGX-class defaults (limits: cpu 128 / memory 800Gi; requests:

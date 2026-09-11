@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Runtime patch for two-node, one-GPU-per-node GB10 communication tests.
+# Workers use host networking to expose the physical RoCE interfaces. The
+# launcher deliberately remains on the pod network so a worker colocated with
+# it is not mistaken for a launcher-local MPI rank.
+
+- apiVersion: trainer.kubeflow.org/v1alpha1
+  kind: TrainingRuntime
+  metadata:
+    name: {{ .EntryName }}-runtime
+  spec:
+    mlPolicy:
+      mpi:
+        numProcPerNode: {{ .GpusPerNode }}
+    template:
+      spec:
+        replicatedJobs:
+        - name: node
+          template:
+            spec:
+              template:
+                spec:
+                  dnsPolicy: ClusterFirstWithHostNet
+                  hostNetwork: true
+                  runtimeClassName: nvidia
+                  containers:
+                  - name: node
+                    command:
+                    - sh
+                    - -ec
+                    args:
+                    - |-
+                      test -x /usr/local/bin/all_reduce_perf_mpi
+                      test -x /usr/local/mpi/bin/mpirun
+                      test -c /dev/infiniband/rdma_cm
+                      ibv_devinfo
+                      nvidia-smi -L
+                      mkdir -p /var/run/sshd /root/.ssh
+                      chmod 700 /root/.ssh
+                      cp /tmp/mpi-ssh-raw/* /root/.ssh/
+                      chmod 600 /root/.ssh/id_rsa
+                      chmod 644 /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+                      ssh-keygen -A
+                      exec /usr/sbin/sshd -D -e -p 2222 -o PasswordAuthentication=no -o PermitRootLogin=prohibit-password -o PidFile=/tmp/gb10-sshd.pid
+                    readinessProbe:
+                      initialDelaySeconds: 5
+                      tcpSocket:
+                        port: 2222
+                    resources:
+                      limits:
+                        nvidia.com/gpu: "{{ .GpusPerNode }}"
+{{- range .NicResources }}
+                        {{ .Name }}: "{{ .Quantity }}"
+{{- else }}
+{{- if .NicResourceName }}
+                        {{ .NicResourceName }}: "{{ .MlnxPerNode }}"
+{{- end }}
+{{- end }}
+                      requests:
+                        nvidia.com/gpu: "{{ .GpusPerNode }}"
+{{- range .NicResources }}
+                        {{ .Name }}: "{{ .Quantity }}"
+{{- else }}
+{{- if .NicResourceName }}
+                        {{ .NicResourceName }}: "{{ .MlnxPerNode }}"
+{{- end }}
+{{- end }}
+                  tolerations:
+                  - key: kubernetes.io/arch
+                    operator: Equal
+                    value: arm64
+                    effect: NoSchedule
+                  - key: nvidia.com/gpu
+                    operator: Exists
+                    effect: NoSchedule
+        - name: launcher
+          template:
+            spec:
+              template:
+                spec:
+                  runtimeClassName: nvidia
+                  tolerations:
+                  - key: kubernetes.io/arch
+                    operator: Equal
+                    value: arm64
+                    effect: NoSchedule
+                  - key: nvidia.com/gpu
+                    operator: Exists
+                    effect: NoSchedule

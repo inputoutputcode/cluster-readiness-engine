@@ -72,6 +72,7 @@ Different GPU architectures and cloud platforms require different Kubernetes res
 | H100 | AWS | EFA | `vpc.amazonaws.com/efa: 32`, no hugepages |
 | H100 | Azure | InfiniBand | mlnxnics dep, topo ConfigMap |
 | GB200/GB300 | On-prem | InfiniBand | arm64/GPU taint tolerations, portable IB NCCL env (no HCA pinning), NIC resource auto-detected or set via `nicResourceName`, ComputeDomain |
+| GB10 | On-prem | Dual-rail RoCE | One GPU per node, host-networked workers, CNI-networked launcher, internal NCCL verbs transport, explicit DGX Spark HCA/socket selection, and NIC resources supplied with `nicResources` |
 
 The live controller tracks which overrides matched in `status.orchestration.appliedOverrides`. When using `nvcrectl workflow render`, the same information is also written to the `nvcrectl.nvidia.com/applied-overrides` annotation on the rendered manifest.
 
@@ -86,6 +87,20 @@ For GB200/GB300 targets, the on-prem override contributes:
 - **A NIC resource request**, detected automatically or configured via `nicResourceName`. Resource names vary by RDMA device plugin (`rdma/ib`, `nvidia.com/mlnxnics`, and others are all in the wild), so when the field is unset the controller inspects the target nodes: if exactly one candidate resource (any `rdma/*` name, or the exact name `nvidia.com/mlnxnics`) is allocatable at the resolved `mlnxPerNode` count on every target node, that name is requested. Detection never guesses or over-commits: with zero candidates, with several, or when candidates exist but no node set can cover the requested count, no NIC resource is requested (pods still schedule, without an explicit NIC allocation) and a Normal `NICResourceDetection` event on the Certification or WorkloadRun explains what was found, naming the requested count when candidates fall below it. Set `nicResourceName` to override detection or to resolve an ambiguous fleet. The per-container count always comes from `mlnxPerNode`, detected or not. GB200/GB300 default `mlnxPerNode` to 8; sites running a shared-device plugin (one pooled resource per pod) should set `mlnxPerNode: 1`; with the default of 8, a pooled resource advertised as `rdma/ib: 1` is not detected, because the resulting request could never schedule.
 
 Offline `nvcrectl certification render` and `nvcrectl workloadrun render` have no cluster to inspect, so without `--dry-run` they render field-only: the NIC resource appears only when `nicResourceName` is set. With `--dry-run`, real nodes are discovered and detection runs exactly as in the controllers.
+
+Multi-rail Certification workloads can request several explicit device-plugin
+resources with `nicResources`. The list takes precedence over the singular
+`nicResourceName`/`mlnxPerNode` request and is not auto-detected because CRE
+cannot infer whether multiple advertised resources are independent rails,
+aliases, or different allocation modes. For example:
+
+```yaml
+nicResources:
+  - name: rdma/rdma_shared_device_a
+    quantity: 1
+  - name: rdma/rdma_shared_device_b
+    quantity: 1
+```
 
 ```yaml
 apiVersion: nvcre.nvidia.com/v1alpha1
