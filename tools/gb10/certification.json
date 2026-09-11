@@ -1,0 +1,16 @@
+{
+  "apiVersion": "nvcre.nvidia.com/v1alpha1",
+  "kind": "Certification",
+  "metadata": {"name": "gb10-nccl"},
+  "spec": {
+    "target": {"nodeSelector": {"nvidia.com/gpu.product": "NVIDIA-GB10"}},
+    "nodesPerJob": 2,
+    "gpusPerNode": 1,
+    "mlnxPerNode": 0,
+    "enableMNNVL": false,
+    "maxBytes": "1G",
+    "numIterations": 20,
+    "numCycles": 2,
+    "categories": [{"domain": "communication", "variant": "nccl-all-reduce"}]
+  }
+}

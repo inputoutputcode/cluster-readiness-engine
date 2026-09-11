@@ -87,6 +87,11 @@ test: setup-envtest ## Run unit and integration tests.
 	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" \
 	go test ./cmd/integration/ -v -timeout 300s -count=1
 
+.PHONY: test-gb10
+test-gb10: ## Test the local GB10 overlay against the actual catalog renderer.
+	go build -o bin/nvcrectl ./cmd/nvcrectl/
+	NVCRECTL="$(CURDIR)/bin/nvcrectl" python3 -m unittest discover -s tools/gb10 -v
+
 .PHONY: test-ci
 test-ci: setup-envtest gotestsum gocover-cobertura ## Run tests with JUnit XML and coverage reports for CI.
 	KUBEBUILDER_ASSETS="$(shell "$(ENVTEST)" use $(ENVTEST_K8S_VERSION) --bin-dir "$(LOCALBIN)" -p path)" \
