@@ -31,3 +31,6 @@ spec:
       variant: nccl-all-reduce
     - domain: communication
       variant: nccl-all-gather
+      options:
+        thresholds:
+          busBandwidthGBps: value >= 18

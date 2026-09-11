@@ -45,11 +45,13 @@
       },
       {
         "domain": "communication",
-        "variant": "nccl-all-gather"
+        "variant": "nccl-all-gather",
+        "options": {"thresholds": {"busBandwidthGBps": "value >= 18"}}
       },
       {
         "domain": "communication",
-        "variant": "nccl-alltoall"
+        "variant": "nccl-alltoall",
+        "options": {"thresholds": {"busBandwidthGBps": "value >= 18"}}
       },
       {
         "domain": "training",

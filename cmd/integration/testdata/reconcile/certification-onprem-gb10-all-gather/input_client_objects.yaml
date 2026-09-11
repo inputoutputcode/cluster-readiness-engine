@@ -56,3 +56,6 @@ spec:
   categories:
     - domain: communication
       variant: nccl-all-gather
+      options:
+        thresholds:
+          busBandwidthGBps: value >= 18

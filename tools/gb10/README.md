@@ -65,12 +65,16 @@ The recommended sample runs six categories: per-node DCGM level-4 diagnostics,
 per-node C2C coherent-memory validation, dual-rail NCCL all-reduce, all-gather,
 and all-to-all, plus a random-initialized Llama 3.2 1B DDP training run. The
 DCGM category retains its `nvcr.io/nvidia/cloud-native/dcgm` image instead of
-inheriting the suite-wide GB10 workload image. It enforces the provisional
-dual-rail threshold observed during local validation (`busBandwidthGBps >= 18`),
-a C2C sanity floor of 1 GB/s in each direction, and runtime goodput of at least
-0.80. The lower goodput floor accounts for fixed model and DDP startup overhead
-in the short 50-step smoke run. Establish site baselines before tightening the
-C2C or training thresholds.
+inheriting the suite-wide GB10 workload image. All three NCCL collectives enforce
+the provisional dual-rail threshold observed during local validation
+(`busBandwidthGBps >= 18`), while C2C requires verified transfers and at least
+1 GB/s in each direction, and training requires runtime goodput of at least
+0.80. DCGM has no numeric CRE measurement; its pass criterion is successful
+completion of `dcgmi diag --run 4`. The lower goodput floor accounts for fixed
+model and DDP startup overhead in the short 50-step smoke run. Establish site
+baselines before tightening the thresholds. The NCCL value is an operational
+floor rather than a regression threshold: five independent two-node all-gather
+runs measured 20.43-20.79 GB/s with approximately 0.7% sample variation.
 Leave the Certification installed to regenerate its report later:
 
 ```bash
@@ -234,8 +238,8 @@ every second because this small two-node test can finish before the catalog's
 30-second sampling interval. Confirm two GB10 ranks, no correctness
 errors, `NCCL_NET_PLUGIN set by environment to none`, and internal NET/IB device
 selection on both ranks in the launcher log. CRE records algBW and busBW. The
-sample Certification uses the provisional dual-rail threshold established by
-the successful test, 18 GB/s bus bandwidth.
+sample Certification applies the provisional 18 GB/s dual-rail bus-bandwidth
+threshold to all-reduce, all-gather, and all-to-all.
 
 Capture port counters on both nodes immediately before and after each run:
 

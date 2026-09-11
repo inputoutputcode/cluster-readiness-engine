@@ -81,8 +81,11 @@ The local prototype under `tools/gb10/` provides:
     two-hour timeout, and external GPU Operator Host Engine dependency.
 12. Add the all-gather collective to the GB10 communication profile using the
     same dual-rail runtime resources, MPI transport arguments, and one-second
-    bandwidth sampling as all-reduce and all-to-all. It initially carries no
-    performance threshold until a hardware baseline is recorded.
+    bandwidth sampling as all-reduce and all-to-all. Apply the same provisional
+    18 GB/s bus-bandwidth floor to all three collectives. Five independent
+    all-gather runs measured 20.43-20.79 GB/s (20.52 GB/s median, approximately
+    0.7% sample coefficient of variation); observed all-to-all results were
+    21.44-21.65 GB/s and all-reduce results were 22.38-23.05 GB/s.
 13. A recommended six-category Certification and a separate 4-8-node
     diagnose Certification. Diagnose retains `minGroupSize: 2`; its MNNVL-only
     comparison is skipped because GB10 has NVLink-C2C, not Multi-Node NVLink.
@@ -114,7 +117,9 @@ establish free resource capacity, image compatibility, or peer reachability.
 Device-plugin advertisement proves allocation availability, not GPU-direct
 RDMA or aggregate dual-rail throughput. NCCL transport logs and substantial
 payload counter deltas on both ports are required to interpret measurements.
-No unmeasured performance threshold is supplied.
+Every category with a CRE measurement has an explicit threshold. DCGM level 4
+has no numeric CRE metric; successful completion of the diagnostic process is
+its pass criterion.
 
 ## Alternatives Considered
 

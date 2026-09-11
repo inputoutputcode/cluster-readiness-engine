@@ -19,7 +19,12 @@
       "categories": [
         {
           "domain": "communication",
-          "variant": "nccl-all-gather"
+          "variant": "nccl-all-gather",
+          "options": {
+            "thresholds": {
+              "busBandwidthGBps": "value \u003e= 18"
+            }
+          }
         }
       ],
       "nodesPerJob": 2,
@@ -450,7 +455,18 @@
             }
           }
         }
-      ]
+      ],
+      "validation": {
+        "performance": {
+          "enabled": true,
+          "tracking": {},
+          "thresholds": {
+            "thresholds": {
+              "busBandwidthGBps": "value \u003e= 18"
+            }
+          }
+        }
+      }
     },
     "status": {
       "conditions": [

@@ -181,6 +181,11 @@ class GB10Test(unittest.TestCase):
                          "value >= 0.80")
         self.assertEqual(llama["jobTemplate"]["spec"]["goodputMeasurement"]["logProfileRef"],
                          "megatron-training")
+        for variant in ["nccl-all-reduce", "nccl-all-gather", "nccl-alltoall"]:
+            with self.subTest(variant=variant):
+                thresholds = by_variant[variant]["spec"]["validation"]["performance"][
+                    "thresholds"]["thresholds"]
+                self.assertEqual(thresholds["busBandwidthGBps"], "value >= 18")
         allgather = by_variant["nccl-all-gather"]["spec"]
         self.assertEqual(allgather["jobTemplate"]["spec"]["bandwidthMeasurement"], {
             "logProfileRef": "nccl-bandwidth", "sampleInterval": "1s", "testType": "all_gather"})
