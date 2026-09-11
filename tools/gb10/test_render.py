@@ -148,9 +148,20 @@ class GB10Test(unittest.TestCase):
         base = json.loads(subprocess.check_output([
             os.environ["NVCRECTL"], "certification", "render", "--platform", "onprem", "--output", "json",
             str(Path(__file__).with_name("certification.json"))], text=True))
-        self.assertEqual(len(base), 4)
+        self.assertEqual(len(base), 5)
         by_variant = {wf["metadata"]["labels"]["nvcre.nvidia.com/category-variant"]: wf
                       for wf in base}
+        dcgm = by_variant["dcgm-level4"]["spec"]
+        dcgm_trainer = dcgm["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]
+        self.assertEqual(dcgm_trainer["image"],
+                         "nvcr.io/nvidia/cloud-native/dcgm:4.5.2-1-ubuntu22.04")
+        self.assertEqual(dcgm_trainer["numNodes"], 1)
+        self.assertEqual(dcgm["orchestration"]["execution"]["timeoutPerJob"], "2h0m0s")
+        dcgm_runtime = dcgm["dependencies"][0]
+        dcgm_container = dcgm_runtime["spec"]["template"]["spec"]["replicatedJobs"][0][
+            "template"]["spec"]["template"]["spec"]["containers"][0]
+        self.assertEqual(dcgm_container["image"], dcgm_trainer["image"])
+        self.assertIn("nvidia-dcgm.gpu-operator.svc:5555", dcgm_trainer["args"])
         c2c = by_variant["gb10-c2c"]["spec"]
         self.assertEqual(c2c["jobTemplate"]["spec"]["c2cMeasurement"]["sampleInterval"], "1s")
         self.assertEqual(c2c["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["numNodes"], 1)

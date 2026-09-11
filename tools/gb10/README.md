@@ -61,9 +61,11 @@ go build -o bin/nvcrectl ./cmd/nvcrectl/
   --results-file /tmp/gb10-certification.json
 ```
 
-The recommended sample runs four categories: per-node C2C coherent-memory
-validation, dual-rail NCCL all-reduce, dual-rail NCCL all-to-all, and a
-random-initialized Llama 3.2 1B DDP training run. It enforces the provisional
+The recommended sample runs five categories: per-node DCGM level-4 diagnostics,
+per-node C2C coherent-memory validation, dual-rail NCCL all-reduce, dual-rail
+NCCL all-to-all, and a random-initialized Llama 3.2 1B DDP training run. The
+DCGM category retains its `nvcr.io/nvidia/cloud-native/dcgm` image instead of
+inheriting the suite-wide GB10 workload image. It enforces the provisional
 dual-rail threshold observed during local validation (`busBandwidthGBps >= 18`),
 a C2C sanity floor of 1 GB/s in each direction, and runtime goodput of at least
 0.80. The lower goodput floor accounts for fixed model and DDP startup overhead
@@ -80,6 +82,10 @@ Leave the Certification installed to regenerate its report later:
 ## Prerequisites
 
 - CRE, its NCCL log profile, Kubeflow Trainer, and JobSet installed and healthy.
+- A reachable DCGM Host Engine at `nvidia-dcgm.gpu-operator.svc:5555`. The
+  existing `diagnostics/dcgm-level4` catalog category is a DCGM client and does
+  not deploy Host Engine. GPU Operator commonly disables the standalone DCGM
+  service unless it is explicitly enabled.
 - One allocatable NVIDIA GPU on each arm64 node and the RDMA shared plugin.
 - Python 3, kubectl pointing to the two-node cluster, and nvcrectl.
 - An arm64 image containing CUDA support for GB10, compatible NCCL/verbs
@@ -101,6 +107,23 @@ from this branch, pass `--version` with a published chart version, because the
 local development build has no matching published chart. Then apply the branch
 CRD and local manager upgrade shown above. Re-running `setup init` by itself
 would restore the released manager, which does not understand `nicResources`.
+
+Verify the DCGM dependency before starting the full suite:
+
+```bash
+kubectl -n gpu-operator get service nvidia-dcgm
+kubectl -n gpu-operator get endpointslice \
+  -l kubernetes.io/service-name=nvidia-dcgm
+kubectl -n gpu-operator get pods -l app=nvidia-dcgm -o wide
+```
+
+The catalog gives each per-node level-4 Job a two-hour timeout. The two nodes
+run concurrently unless `options.maxConcurrent` is set. DCGM chooses supported
+plugins from its packaged SKU configuration; inspect the completed pod logs for
+`Skip` or unsupported-test messages. A skipped diagnostic does not establish
+health, even when the process exits successfully. NVIDIA documents higher-level
+diagnostics on non-datacenter GPUs as product-dependent, so GB10 support must be
+confirmed using the exact DCGM image and driver deployed on the Sparks.
 
 The optional Dockerfile builds the MPI NCCL test binary for SM 12.1 using the
 catalog's PyTorch base image. It also builds the C2C CUDA benchmark and installs

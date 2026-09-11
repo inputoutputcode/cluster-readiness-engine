@@ -75,7 +75,11 @@ The local prototype under `tools/gb10/` provides:
 10. A `training/llama32-1b` category using the published Llama 3.2 1B shape,
     random initialization, synthetic tokens, BF16, DDP, and the existing
     Megatron log format for goodput collection without model or dataset access.
-11. A recommended four-category Certification and a separate 4-8-node
+11. Include the existing `diagnostics/dcgm-level4` category in the recommended
+    suite. A per-category image override retains the DCGM image instead of the
+    suite-wide GB10 workload image. It keeps the catalog's one-node grouping,
+    two-hour timeout, and external GPU Operator Host Engine dependency.
+12. A recommended five-category Certification and a separate 4-8-node
     diagnose Certification. Diagnose retains `minGroupSize: 2`; its MNNVL-only
     comparison is skipped because GB10 has NVLink-C2C, not Multi-Node NVLink.
 
