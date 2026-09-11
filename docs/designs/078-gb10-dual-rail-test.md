@@ -43,8 +43,10 @@ The local prototype under `tools/gb10/` provides:
    launcher uses the Kubernetes pod network so OpenMPI does not mistake the
    same-node worker's host IP for the launcher and run rank 0 outside the
    RDMA-allocated worker container. Worker sshd, readiness probes, and MPI SSH
-   arguments consistently use a dedicated port, default 2222. Runs are
-   performed sequentially to avoid host-port conflicts.
+   arguments consistently use a dedicated port, default 2222. Worker-level
+   OpenMPI BTL/OOB variables pin control traffic to the selected socket
+   interface, avoiding unreachable Docker bridge addresses. Runs are performed
+   sequentially to avoid host-port conflicts.
 4. Exact HCA selection and NCCL_NET=IB, with diagnostic logging and MNNVL
    disabled. NCCL_NET_PLUGIN=none selects NCCL's internal verbs transport
    because the base image's external HPC-X plugin found the selected HCA on
@@ -117,8 +119,10 @@ and active 200 Gb/s rail-A HCAs. The external HPC-X NCCL RDMA plugin initialized
 the HCA on spark-1ac4 but reported no device on spark-38fc; the internal verbs
 transport showed the same asymmetry. Logs then established that rank 0 was
 running locally in the host-networked launcher on spark-38fc rather than in its
-RDMA-allocated worker. The worker-only host-network change now needs validation.
-Before a PR, record the image/driver versions, single-rail and dual-rail results,
+RDMA-allocated worker. Moving the launcher to the pod network placed both ranks
+correctly, after which OpenMPI selected an unreachable Docker bridge address
+for rank-to-rank TCP. The worker interface pin now needs validation. Before a
+PR, record the image/driver versions, single-rail and dual-rail results,
 transport/GDR diagnostics, and counter deltas. Use that evidence to review the
 scope and defaults proposed here.
 

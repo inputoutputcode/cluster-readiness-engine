@@ -76,6 +76,10 @@ class GB10Test(unittest.TestCase):
                 for letter in (["a", "b"] if rail == "both" else [rail]):
                     resources[f"rdma/rdma_shared_device_{letter}"] = "1"
                 self.assertEqual(worker["resources"], {"requests": resources, "limits": resources})
+                self.assertEqual(worker["env"], [
+                    {"name": "OMPI_MCA_btl_tcp_if_include", "value": "enp1s0f1np1"},
+                    {"name": "OMPI_MCA_oob_tcp_if_include", "value": "enp1s0f1np1"},
+                ])
                 self.assertEqual(worker["readinessProbe"]["tcpSocket"]["port"], 2222)
                 self.assertIn("-p 2222", worker["args"][0])
                 self.assertTrue(worker["volumeMounts"])
@@ -103,6 +107,7 @@ class GB10Test(unittest.TestCase):
         self.assertEqual(pod["runtimeClassName"], "nvidia")
         self.assertEqual(pod["imagePullSecrets"], [{"name": "registry"}])
         self.assertEqual(pod["containers"][0]["resources"]["limits"]["rdma/y"], "1")
+        self.assertEqual(pod["containers"][0]["env"][0]["value"], "eth9")
 
     def test_reject_unresolved_and_wrong_catalog(self):
         base = base_workflow()
