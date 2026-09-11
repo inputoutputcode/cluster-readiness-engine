@@ -57,6 +57,7 @@ def configure(workflows, args):
         "-N", "1", "--allow-run-as-root", "--bind-to", "none",
         "--mca", "plm_rsh_args", f"-p {args.ssh_port} -o StrictHostKeyChecking=no",
         "--mca", "pml", "ob1", "--mca", "btl", "self,tcp",
+        "--mca", "btl_tcp_if_include", args.socket_ifname,
     ]
     env = {
         "NCCL_DEBUG": "INFO",
@@ -110,10 +111,6 @@ def configure(workflows, args):
     container = named(worker["containers"], "node")
     resources = {"nvidia.com/gpu": "1", **{resource: "1" for resource, _ in selected}}
     container["resources"] = {"requests": resources.copy(), "limits": resources.copy()}
-    container["env"] = [
-        {"name": "OMPI_MCA_btl_tcp_if_include", "value": args.socket_ifname},
-        {"name": "OMPI_MCA_oob_tcp_if_include", "value": args.socket_ifname},
-    ]
     # A dedicated port avoids colliding with the host's administrative sshd.
     container["command"] = ["sh", "-ec"]
     container["args"] = [

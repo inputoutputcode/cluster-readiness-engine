@@ -105,9 +105,12 @@ pods; device allocation exposes the selected verbs devices. The launcher stays
 on the Kubernetes pod network. If it shares host networking with a worker,
 OpenMPI recognizes the worker's host IP as local and runs rank 0 in the launcher
 container, where no RDMA resource was allocated. MPI uses TCP for control and
-SSHes into both workers. The worker environment pins OpenMPI BTL and OOB TCP to
-the selected `--socket-ifname`; without this, OpenMPI selected a Docker bridge
-address (`172.18.0.1`) that was unreachable from the peer. NCCL is explicitly
+SSHes into both workers. The `mpirun` MCA arguments pin rank-to-rank BTL TCP to
+the selected `--socket-ifname`; a worker container environment setting is not
+reliably propagated through SSH. Without the explicit MCA argument, OpenMPI
+selected a Docker bridge address (`172.18.0.1`) that was unreachable from the
+peer. The OOB interface remains automatic because the launcher uses the CNI
+network and does not have the workers' host interface. NCCL is explicitly
 set to `NET=IB` for RoCE data and cannot silently substitute its Socket backend.
 `NCCL_NET_PLUGIN=none` bypasses the HPC-X `libnccl-net.so` included in the base
 image and selects NCCL's internal IB verbs transport. This avoids an observed
