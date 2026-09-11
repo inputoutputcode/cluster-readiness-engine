@@ -50,6 +50,7 @@ class GB10Test(unittest.TestCase):
         self.assertEqual((trainer["numNodes"], trainer["numProcPerNode"]), (2, 1))
         self.assertIn("NCCL_MNNVL_ENABLE=0", trainer["args"])
         self.assertIn("NCCL_NET=IB", trainer["args"])
+        self.assertIn("NCCL_NET_PLUGIN=none", trainer["args"])
         hcas = {"a": "rocep1s0f1:1", "b": "roceP2p1s0f1:1", "both": "rocep1s0f1:1,roceP2p1s0f1:1"}
         self.assertIn("NCCL_IB_HCA==" + hcas[rail], trainer["args"])
         self.assertEqual(trainer["args"][-10:], ["-b", "8", "-e", "1G", "-f", "2", "-n", "20", "-N", "2"])

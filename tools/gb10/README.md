@@ -103,6 +103,10 @@ not check current resource consumption, peer links, image contents, or port
 availability. Host networking exposes the node's interfaces; device allocation
 exposes the selected verbs devices. MPI uses TCP for control; NCCL is explicitly
 set to `NET=IB` for RoCE data and cannot silently substitute its Socket backend.
+`NCCL_NET_PLUGIN=none` bypasses the HPC-X `libnccl-net.so` included in the base
+image and selects NCCL's internal IB verbs transport. This avoids an observed
+case where that external plugin found the selected HCA on one GB10 but reported
+`NET/IB : No device found` on the other.
 
 Collect status and logs before deleting the run:
 
@@ -124,7 +128,8 @@ released before repeating the commands with `--rail b` and then `--rail both`
 
 The workload uses two ranks and one GPU per rank, sweeps 8 bytes through 1 GiB,
 and runs 20 iterations with two cycles. Confirm two GB10 ranks, no correctness
-errors, and NET/IB selection in the launcher log. CRE records algBW and busBW;
+errors, `NCCL_NET_PLUGIN set by environment to none`, and internal NET/IB device
+selection on both ranks in the launcher log. CRE records algBW and busBW;
 there is deliberately no unmeasured pass/fail bandwidth threshold.
 
 Capture port counters on both nodes immediately before and after each run:

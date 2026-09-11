@@ -43,8 +43,11 @@ The local prototype under `tools/gb10/` provides:
    probes, and MPI SSH arguments consistently use a dedicated port, default
    2222. Runs are performed sequentially to avoid host-port conflicts.
 4. Exact HCA selection and NCCL_NET=IB, with diagnostic logging and MNNVL
-   disabled. MPI control traffic uses TCP on a configurable bootstrap
-   interface. No fixed GID index or GPU-direct mode is forced.
+   disabled. NCCL_NET_PLUGIN=none selects NCCL's internal verbs transport
+   because the base image's external HPC-X plugin found the selected HCA on
+   only one node during the first live test. MPI control traffic uses TCP on
+   a configurable bootstrap interface. No fixed GID index or GPU-direct mode
+   is forced.
 5. Separate rail-a, rail-b, and dual-rail manifests with distinct Workflow
    and runtime names. A node preflight checks labels, readiness, cordon
    state, and advertised resources before rendering.
@@ -103,9 +106,13 @@ six GB10 tests. Helm rendering tests were skipped because Helm was unavailable.
 The arm64 workload image has not been built here, and live GPU/RDMA tests
 remain to be run on the target nodes. No golden files or CRD schemas changed.
 
-Before a PR, record the image/driver versions, mappings on both nodes,
-single-rail and dual-rail results, transport/GDR diagnostics, and counter
-deltas. Use that evidence to review the scope and defaults proposed here.
+Live testing has confirmed MPI launch, pod DNS, SSH on both nodes, both GB10s,
+and active 200 Gb/s rail-A HCAs. The external HPC-X NCCL RDMA plugin initialized
+the HCA on spark-1ac4 but reported no device on spark-38fc; the internal verbs
+transport pin now needs validation. Before a PR, record the image/driver
+versions, single-rail and dual-rail results, transport/GDR diagnostics, and
+counter deltas. Use that evidence to review the scope and defaults proposed
+here.
 
 ## References
 

@@ -64,6 +64,9 @@ def configure(workflows, args):
         "NCCL_DEBUG_SUBSYS": "INIT,NET,GRAPH",
         "NCCL_MNNVL_ENABLE": "0",
         "NCCL_NET": "IB",
+        # The PyTorch image ships HPC-X libnccl-net.so. Use NCCL's internal
+        # verbs transport so both GB10 nodes follow the same device path.
+        "NCCL_NET_PLUGIN": "none",
         "NCCL_IB_DISABLE": "0",
         "NCCL_IB_HCA": "=" + ",".join(hca + ":1" for _, hca in selected),
         "NCCL_SOCKET_IFNAME": "=" + args.socket_ifname,
