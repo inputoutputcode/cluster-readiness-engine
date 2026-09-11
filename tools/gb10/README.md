@@ -100,8 +100,12 @@ the selected HCA. Override `--socket-ifname enP2p1s0f1np1` for bootstrap on B.
 
 `--preflight` checks node identity, readiness and advertised resources. It does
 not check current resource consumption, peer links, image contents, or port
-availability. Host networking exposes the node's interfaces; device allocation
-exposes the selected verbs devices. MPI uses TCP for control; NCCL is explicitly
+availability. Host networking exposes the node's interfaces in the two worker
+pods; device allocation exposes the selected verbs devices. The launcher stays
+on the Kubernetes pod network. If it shares host networking with a worker,
+OpenMPI recognizes the worker's host IP as local and runs rank 0 in the launcher
+container, where no RDMA resource was allocated. MPI uses TCP for control and
+SSHes into both workers; NCCL is explicitly
 set to `NET=IB` for RoCE data and cannot silently substitute its Socket backend.
 `NCCL_NET_PLUGIN=none` bypasses the HPC-X `libnccl-net.so` included in the base
 image and selects NCCL's internal IB verbs transport. This avoids an observed

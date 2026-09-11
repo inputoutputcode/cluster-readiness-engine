@@ -57,8 +57,6 @@ def configure(workflows, args):
         "-N", "1", "--allow-run-as-root", "--bind-to", "none",
         "--mca", "plm_rsh_args", f"-p {args.ssh_port} -o StrictHostKeyChecking=no",
         "--mca", "pml", "ob1", "--mca", "btl", "self,tcp",
-        "--mca", "btl_tcp_if_include", args.socket_ifname,
-        "--mca", "oob_tcp_if_include", args.socket_ifname,
     ]
     env = {
         "NCCL_DEBUG": "INFO",
@@ -87,8 +85,16 @@ def configure(workflows, args):
     worker = named(jobs, "node")["template"]["spec"]["template"]["spec"]
     for job in jobs:
         pod = job["template"]["spec"]["template"]["spec"]
-        pod["hostNetwork"] = True
-        pod["dnsPolicy"] = "ClusterFirstWithHostNet"
+        if job["name"] == "node":
+            pod["hostNetwork"] = True
+            pod["dnsPolicy"] = "ClusterFirstWithHostNet"
+        else:
+            # A host-networked launcher on the same node as a worker makes
+            # OpenMPI classify that worker as local and execute rank 0 in the
+            # launcher, which has no GPU/RDMA allocation. Keep the launcher on
+            # the pod network so both ranks are started through worker sshd.
+            pod.pop("hostNetwork", None)
+            pod.pop("dnsPolicy", None)
         pod["nodeSelector"] = {"nvidia.com/gpu.product": "NVIDIA-GB10", "kubernetes.io/arch": "arm64"}
         if args.runtime_class:
             pod["runtimeClassName"] = args.runtime_class

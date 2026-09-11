@@ -39,9 +39,12 @@ The local prototype under `tools/gb10/` provides:
 2. A dependency-free Python overlay that transforms the resolved on-prem
    Workflow. Each worker requests one GPU and one shared allocation slot
    from each selected RDMA resource in both requests and limits.
-3. Host networking with ClusterFirstWithHostNet DNS. Worker sshd, readiness
-   probes, and MPI SSH arguments consistently use a dedicated port, default
-   2222. Runs are performed sequentially to avoid host-port conflicts.
+3. Host networking with ClusterFirstWithHostNet DNS on workers only. The
+   launcher uses the Kubernetes pod network so OpenMPI does not mistake the
+   same-node worker's host IP for the launcher and run rank 0 outside the
+   RDMA-allocated worker container. Worker sshd, readiness probes, and MPI SSH
+   arguments consistently use a dedicated port, default 2222. Runs are
+   performed sequentially to avoid host-port conflicts.
 4. Exact HCA selection and NCCL_NET=IB, with diagnostic logging and MNNVL
    disabled. NCCL_NET_PLUGIN=none selects NCCL's internal verbs transport
    because the base image's external HPC-X plugin found the selected HCA on
@@ -112,10 +115,12 @@ remain to be run on the target nodes. No golden files or CRD schemas changed.
 Live testing has confirmed MPI launch, pod DNS, SSH on both nodes, both GB10s,
 and active 200 Gb/s rail-A HCAs. The external HPC-X NCCL RDMA plugin initialized
 the HCA on spark-1ac4 but reported no device on spark-38fc; the internal verbs
-transport pin now needs validation. Before a PR, record the image/driver
-versions, single-rail and dual-rail results, transport/GDR diagnostics, and
-counter deltas. Use that evidence to review the scope and defaults proposed
-here.
+transport showed the same asymmetry. Logs then established that rank 0 was
+running locally in the host-networked launcher on spark-38fc rather than in its
+RDMA-allocated worker. The worker-only host-network change now needs validation.
+Before a PR, record the image/driver versions, single-rail and dual-rail results,
+transport/GDR diagnostics, and counter deltas. Use that evidence to review the
+scope and defaults proposed here.
 
 ## References
 

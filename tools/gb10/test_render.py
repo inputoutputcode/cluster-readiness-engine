@@ -62,8 +62,12 @@ class GB10Test(unittest.TestCase):
         self.assertTrue(tj["runtimePatches"])
         for job in rt["spec"]["template"]["spec"]["replicatedJobs"]:
             pod = job["template"]["spec"]["template"]["spec"]
-            self.assertTrue(pod["hostNetwork"])
-            self.assertEqual(pod["dnsPolicy"], "ClusterFirstWithHostNet")
+            if job["name"] == "node":
+                self.assertTrue(pod["hostNetwork"])
+                self.assertEqual(pod["dnsPolicy"], "ClusterFirstWithHostNet")
+            else:
+                self.assertNotIn("hostNetwork", pod)
+                self.assertNotIn("dnsPolicy", pod)
             for container in pod["containers"] + pod.get("initContainers", []):
                 self.assertEqual(container["image"], "local/gb10:test")
             if job["name"] == "node":
@@ -75,6 +79,8 @@ class GB10Test(unittest.TestCase):
                 self.assertEqual(worker["readinessProbe"]["tcpSocket"]["port"], 2222)
                 self.assertIn("-p 2222", worker["args"][0])
                 self.assertTrue(worker["volumeMounts"])
+        self.assertNotIn("btl_tcp_if_include", trainer["args"])
+        self.assertNotIn("oob_tcp_if_include", trainer["args"])
 
     def test_all_rails_and_no_input_mutation(self):
         base = base_workflow()
