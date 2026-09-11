@@ -148,7 +148,7 @@ class GB10Test(unittest.TestCase):
         base = json.loads(subprocess.check_output([
             os.environ["NVCRECTL"], "certification", "render", "--platform", "onprem", "--output", "json",
             str(Path(__file__).with_name("certification.json"))], text=True))
-        self.assertEqual(len(base), 5)
+        self.assertEqual(len(base), 6)
         by_variant = {wf["metadata"]["labels"]["nvcre.nvidia.com/category-variant"]: wf
                       for wf in base}
         dcgm = by_variant["dcgm-level4"]["spec"]
@@ -181,6 +181,12 @@ class GB10Test(unittest.TestCase):
                          "value >= 0.80")
         self.assertEqual(llama["jobTemplate"]["spec"]["goodputMeasurement"]["logProfileRef"],
                          "megatron-training")
+        allgather = by_variant["nccl-all-gather"]["spec"]
+        self.assertEqual(allgather["jobTemplate"]["spec"]["bandwidthMeasurement"], {
+            "logProfileRef": "nccl-bandwidth", "sampleInterval": "1s", "testType": "all_gather"})
+        allgather_args = allgather["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"]
+        self.assertIn("/usr/local/bin/all_gather_perf_mpi", allgather_args)
+        self.assertIn("NCCL_IB_HCA==rocep1s0f1:1,roceP2p1s0f1:1", allgather_args)
         alltoall_args = by_variant["nccl-alltoall"]["spec"]["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"]
         self.assertIn("/usr/local/bin/alltoall_perf_mpi", alltoall_args)
         self.assertIn("NCCL_IB_HCA==rocep1s0f1:1,roceP2p1s0f1:1", alltoall_args)

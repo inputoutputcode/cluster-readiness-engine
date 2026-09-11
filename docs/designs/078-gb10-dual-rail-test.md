@@ -79,7 +79,11 @@ The local prototype under `tools/gb10/` provides:
     suite. A per-category image override retains the DCGM image instead of the
     suite-wide GB10 workload image. It keeps the catalog's one-node grouping,
     two-hour timeout, and external GPU Operator Host Engine dependency.
-12. A recommended five-category Certification and a separate 4-8-node
+12. Add the all-gather collective to the GB10 communication profile using the
+    same dual-rail runtime resources, MPI transport arguments, and one-second
+    bandwidth sampling as all-reduce and all-to-all. It initially carries no
+    performance threshold until a hardware baseline is recorded.
+13. A recommended six-category Certification and a separate 4-8-node
     diagnose Certification. Diagnose retains `minGroupSize: 2`; its MNNVL-only
     comparison is skipped because GB10 has NVLink-C2C, not Multi-Node NVLink.
 

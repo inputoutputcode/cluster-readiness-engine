@@ -1,0 +1,519 @@
+{
+  "Certification/gb10-cert": {
+    "kind": "Certification",
+    "apiVersion": "nvcre.nvidia.com/v1alpha1",
+    "metadata": {
+      "name": "gb10-cert",
+      "namespace": "default",
+      "finalizers": [
+        "nvcre.nvidia.com/certification-finalizer"
+      ]
+    },
+    "spec": {
+      "target": {
+        "nodeNames": [
+          "spark-1ac4",
+          "spark-38fc"
+        ]
+      },
+      "categories": [
+        {
+          "domain": "communication",
+          "variant": "nccl-all-gather"
+        }
+      ],
+      "nodesPerJob": 2,
+      "gpusPerNode": 1,
+      "nicResources": [
+        {
+          "name": "rdma/rdma_shared_device_a",
+          "quantity": 1
+        },
+        {
+          "name": "rdma/rdma_shared_device_b",
+          "quantity": 1
+        }
+      ],
+      "enableMNNVL": false,
+      "image": "gb10-nccl:local",
+      "maxBytes": "1G",
+      "numIterations": 20,
+      "numCycles": 2
+    },
+    "status": {
+      "conditions": [
+        {
+          "type": "InProgress",
+          "status": "True",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "WorkflowRunning",
+          "message": "Certification in progress"
+        },
+        {
+          "type": "Succeeded",
+          "status": "False",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "NotApplicable",
+          "message": ""
+        },
+        {
+          "type": "Failed",
+          "status": "False",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "NotApplicable",
+          "message": ""
+        }
+      ],
+      "categoryStatuses": [
+        {
+          "domain": "communication",
+          "variant": "nccl-all-gather",
+          "workflowRef": {
+            "name": "gb10-cert-communication-n-2fb2d",
+            "namespace": "default"
+          },
+          "status": "InProgress"
+        }
+      ]
+    }
+  },
+  "Workflow/gb10-cert-communication-n-2fb2d": {
+    "kind": "Workflow",
+    "apiVersion": "nvcre.nvidia.com/v1alpha1",
+    "metadata": {
+      "name": "gb10-cert-communication-n-2fb2d",
+      "namespace": "default",
+      "labels": {
+        "app.kubernetes.io/managed-by": "nvcre",
+        "nvcre.nvidia.com/category-domain": "communication",
+        "nvcre.nvidia.com/category-variant": "nccl-all-gather",
+        "nvcre.nvidia.com/certification": "gb10-cert"
+      },
+      "ownerReferences": [
+        {
+          "apiVersion": "nvcre.nvidia.com/v1alpha1",
+          "kind": "Certification",
+          "name": "gb10-cert",
+          "uid": "",
+          "controller": true,
+          "blockOwnerDeletion": true
+        }
+      ],
+      "finalizers": [
+        "nvcre.nvidia.com/workflow-finalizer"
+      ]
+    },
+    "spec": {
+      "jobTemplate": {
+        "spec": {
+          "workload": {
+            "trainJob": {
+              "runtimeRef": {
+                "name": "nccl-all-gather-runtime",
+                "apiGroup": "trainer.kubeflow.org",
+                "kind": "TrainingRuntime"
+              },
+              "trainer": {
+                "image": "gb10-nccl:local",
+                "command": [
+                  "timeout",
+                  "3600",
+                  "/usr/local/mpi/bin/mpirun"
+                ],
+                "args": [
+                  "-N",
+                  "1",
+                  "--allow-run-as-root",
+                  "--bind-to",
+                  "none",
+                  "--mca",
+                  "plm_rsh_args",
+                  "-p 2222 -o StrictHostKeyChecking=no",
+                  "--mca",
+                  "pml",
+                  "ob1",
+                  "--mca",
+                  "btl",
+                  "self,tcp",
+                  "--mca",
+                  "btl_tcp_if_include",
+                  "enp1s0f1np1",
+                  "-x",
+                  "NCCL_DEBUG=INFO",
+                  "-x",
+                  "NCCL_DEBUG_SUBSYS=INIT,NET,GRAPH",
+                  "-x",
+                  "NCCL_MNNVL_ENABLE=0",
+                  "-x",
+                  "NCCL_NET=IB",
+                  "-x",
+                  "NCCL_NET_PLUGIN=none",
+                  "-x",
+                  "NCCL_IB_DISABLE=0",
+                  "-x",
+                  "NCCL_IB_HCA==rocep1s0f1:1,roceP2p1s0f1:1",
+                  "-x",
+                  "NCCL_SOCKET_IFNAME==enp1s0f1np1",
+                  "-x",
+                  "NCCL_SOCKET_FAMILY=AF_INET",
+                  "-x",
+                  "NCCL_CROSS_NIC=0",
+                  "/usr/local/bin/all_gather_perf_mpi",
+                  "-b",
+                  "8",
+                  "-e",
+                  "1G",
+                  "-f",
+                  "2",
+                  "-n",
+                  "20",
+                  "-N",
+                  "2"
+                ],
+                "numNodes": 2,
+                "numProcPerNode": 1
+              },
+              "runtimePatches": [
+                {
+                  "manager": "nvcre.nvidia.com/catalog",
+                  "trainingRuntimeSpec": {
+                    "template": {
+                      "spec": {
+                        "replicatedJobs": [
+                          {
+                            "name": "node",
+                            "template": {
+                              "spec": {
+                                "template": {
+                                  "spec": {
+                                    "volumes": [
+                                      {
+                                        "name": "dshm",
+                                        "emptyDir": {
+                                          "medium": "Memory"
+                                        }
+                                      }
+                                    ],
+                                    "containers": [
+                                      {
+                                        "name": "node",
+                                        "volumeMounts": [
+                                          {
+                                            "name": "dshm",
+                                            "mountPath": "/dev/shm"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "name": "launcher"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              "suspend": false,
+              "managedBy": "trainer.kubeflow.org/trainjob-controller"
+            }
+          },
+          "nodeHealthMonitor": {
+            "cel": {
+              "expression": "node.spec.unschedulable == true"
+            }
+          },
+          "bandwidthMeasurement": {
+            "logProfileRef": "nccl-bandwidth",
+            "sampleInterval": "1s",
+            "testType": "all_gather"
+          }
+        }
+      },
+      "orchestration": {
+        "target": {
+          "nodeNames": [
+            "spark-1ac4",
+            "spark-38fc"
+          ]
+        },
+        "execution": {
+          "timeoutPerJob": "1h0m0s"
+        },
+        "iterations": 1
+      },
+      "dependencies": [
+        {
+          "apiVersion": "trainer.kubeflow.org/v1alpha1",
+          "kind": "TrainingRuntime",
+          "metadata": {
+            "labels": {
+              "app": "nccl-all-gather",
+              "trainer.kubeflow.org/framework": "mpi"
+            },
+            "name": "nccl-all-gather-runtime"
+          },
+          "spec": {
+            "mlPolicy": {
+              "mpi": {
+                "mpiImplementation": "OpenMPI",
+                "numProcPerNode": 1,
+                "sshAuthMountPath": "/tmp/mpi-ssh-raw"
+              },
+              "numNodes": 1
+            },
+            "template": {
+              "spec": {
+                "network": {
+                  "publishNotReadyAddresses": true
+                },
+                "replicatedJobs": [
+                  {
+                    "name": "node",
+                    "template": {
+                      "spec": {
+                        "template": {
+                          "spec": {
+                            "containers": [
+                              {
+                                "args": [
+                                  "test -x /usr/local/bin/all_reduce_perf_mpi\ntest -x /usr/local/mpi/bin/mpirun\ntest -c /dev/infiniband/rdma_cm\nibv_devinfo\nnvidia-smi -L\nmkdir -p /var/run/sshd /root/.ssh\nchmod 700 /root/.ssh\ncp /tmp/mpi-ssh-raw/* /root/.ssh/\nchmod 600 /root/.ssh/id_rsa\nchmod 644 /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys\nssh-keygen -A\nexec /usr/sbin/sshd -D -e -p 2222 -o PasswordAuthentication=no -o PermitRootLogin=prohibit-password -o PidFile=/tmp/gb10-sshd.pid"
+                                ],
+                                "command": [
+                                  "sh",
+                                  "-ec"
+                                ],
+                                "image": "gb10-nccl:local",
+                                "name": "node",
+                                "readinessProbe": {
+                                  "initialDelaySeconds": 5,
+                                  "tcpSocket": {
+                                    "port": 2222
+                                  }
+                                },
+                                "resources": {
+                                  "limits": {
+                                    "nvidia.com/gpu": "1",
+                                    "rdma/rdma_shared_device_a": "1",
+                                    "rdma/rdma_shared_device_b": "1"
+                                  },
+                                  "requests": {
+                                    "nvidia.com/gpu": "1",
+                                    "rdma/rdma_shared_device_a": "1",
+                                    "rdma/rdma_shared_device_b": "1"
+                                  }
+                                },
+                                "securityContext": {
+                                  "capabilities": {
+                                    "add": [
+                                      "IPC_LOCK"
+                                    ]
+                                  }
+                                },
+                                "volumeMounts": [
+                                  {
+                                    "mountPath": "/tmp/mpi-ssh-raw",
+                                    "name": "mpi-ssh-auth",
+                                    "readOnly": true
+                                  }
+                                ]
+                              }
+                            ],
+                            "dnsPolicy": "ClusterFirstWithHostNet",
+                            "hostNetwork": true,
+                            "restartPolicy": "OnFailure",
+                            "runtimeClassName": "nvidia",
+                            "tolerations": [
+                              {
+                                "effect": "NoSchedule",
+                                "key": "kubernetes.io/arch",
+                                "operator": "Equal",
+                                "value": "arm64"
+                              },
+                              {
+                                "effect": "NoSchedule",
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "dependsOn": [
+                      {
+                        "name": "node",
+                        "status": "Ready"
+                      }
+                    ],
+                    "name": "launcher",
+                    "template": {
+                      "metadata": {
+                        "labels": {
+                          "trainer.kubeflow.org/trainjob-ancestor-step": "trainer"
+                        }
+                      },
+                      "spec": {
+                        "template": {
+                          "spec": {
+                            "containers": [
+                              {
+                                "image": "gb10-nccl:local",
+                                "name": "node",
+                                "resources": {
+                                  "limits": {
+                                    "cpu": "2",
+                                    "memory": "1Gi"
+                                  }
+                                },
+                                "volumeMounts": [
+                                  {
+                                    "mountPath": "/tmp/mpi-ssh-raw",
+                                    "name": "mpi-ssh-auth",
+                                    "readOnly": true
+                                  },
+                                  {
+                                    "mountPath": "/root/.ssh",
+                                    "name": "ssh-keys"
+                                  }
+                                ]
+                              }
+                            ],
+                            "initContainers": [
+                              {
+                                "args": [
+                                  "set -x \u0026\u0026\ncp /tmp/mpi-ssh-raw/* /root/.ssh/ \u0026\u0026\nchmod 600 /root/.ssh/id_rsa \u0026\u0026\nchmod 644 /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys"
+                                ],
+                                "command": [
+                                  "sh",
+                                  "-c"
+                                ],
+                                "image": "gb10-nccl:local",
+                                "name": "fix-ssh-permissions",
+                                "volumeMounts": [
+                                  {
+                                    "mountPath": "/tmp/mpi-ssh-raw",
+                                    "name": "mpi-ssh-auth",
+                                    "readOnly": true
+                                  },
+                                  {
+                                    "mountPath": "/root/.ssh",
+                                    "name": "ssh-keys"
+                                  }
+                                ]
+                              }
+                            ],
+                            "restartPolicy": "OnFailure",
+                            "runtimeClassName": "nvidia",
+                            "tolerations": [
+                              {
+                                "effect": "NoSchedule",
+                                "key": "kubernetes.io/arch",
+                                "operator": "Equal",
+                                "value": "arm64"
+                              },
+                              {
+                                "effect": "NoSchedule",
+                                "key": "nvidia.com/gpu",
+                                "operator": "Exists"
+                              }
+                            ],
+                            "volumes": [
+                              {
+                                "emptyDir": {},
+                                "name": "ssh-keys"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                ],
+                "successPolicy": {
+                  "operator": "All",
+                  "targetReplicatedJobs": [
+                    "launcher"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "type": "InProgress",
+          "status": "True",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "JobRunning",
+          "message": "Iteration 1/1: 1 groups running"
+        },
+        {
+          "type": "Succeeded",
+          "status": "False",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "NotApplicable",
+          "message": ""
+        },
+        {
+          "type": "Failed",
+          "status": "False",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "NotApplicable",
+          "message": ""
+        }
+      ],
+      "dependencyRefs": [
+        {
+          "apiVersion": "trainer.kubeflow.org/v1alpha1",
+          "kind": "TrainingRuntime",
+          "name": "nccl-all-gather-runtime-2fb2d-job",
+          "namespace": "default",
+          "scope": "job",
+          "groupName": "group-0",
+          "iteration": 1
+        }
+      ],
+      "orchestration": {
+        "totalNodes": 2,
+        "nodesPerJob": 2,
+        "totalGroups": 1,
+        "currentIteration": 1,
+        "detectedPlatform": "onprem",
+        "detectedGPUArchitecture": "gb10",
+        "groups": [
+          {
+            "name": "group-0",
+            "nodes": [
+              "spark-1ac4",
+              "spark-38fc"
+            ],
+            "phase": "Running",
+            "jobRef": {
+              "apiVersion": "nvcre.nvidia.com/v1alpha1",
+              "kind": "Job",
+              "name": "gb10-cert-communication-n-2fb2d-job",
+              "namespace": "default"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

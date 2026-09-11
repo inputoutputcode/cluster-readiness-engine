@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+waitFor:
+  kind: Workflow
+  name: gb10-cert-communication-n-2fb2d
+  namespace: default
+  condition: InProgress
+  reason: JobRunning
+collect:
+  - kind: Certification
+    name: gb10-cert
+    namespace: default
+  - kind: Workflow
+    name: gb10-cert-communication-n-2fb2d
+    namespace: default

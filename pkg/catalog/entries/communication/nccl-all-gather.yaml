@@ -516,3 +516,24 @@ overrides:
 {{ lib "nccl/onprem-ib-env.yaml" . | toMpiArgs | indent 12 }}
             - /usr/local/bin/all_gather_perf_mpi
 {{ lib "nccl/nccl-perf-args.yaml" . | indent 12 }}
+# --- On-prem + GB10 (DGX Spark dual-rail RoCE) ---
+- when:
+    platform:
+      equals: onprem
+    gpuArchitecture:
+      equals: gb10
+  dependencies:
+{{ lib "deps/onprem-gb10-runtime-patch-comm.yaml" . | indent 2 }}
+  jobTemplate:
+    spec:
+      bandwidthMeasurement:
+        logProfileRef: nccl-bandwidth
+        sampleInterval: 1s
+        testType: all_gather
+      workload:
+        trainJob:
+          trainer:
+            args:
+{{ lib "nccl/onprem-gb10-mpirun-args.yaml" . | indent 12 }}
+            - /usr/local/bin/all_gather_perf_mpi
+{{ lib "nccl/nccl-perf-args.yaml" . | indent 12 }}

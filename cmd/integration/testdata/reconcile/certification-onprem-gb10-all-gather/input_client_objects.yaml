@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Node
+metadata:
+  name: spark-1ac4
+  labels:
+    nvidia.com/gpu.present: "true"
+    nvidia.com/gpu.product: NVIDIA-GB10
+    kubernetes.io/hostname: spark-1ac4
+    kubernetes.io/arch: arm64
+status:
+  allocatable:
+    nvidia.com/gpu: "1"
+    rdma/rdma_shared_device_a: "63"
+    rdma/rdma_shared_device_b: "63"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  name: spark-38fc
+  labels:
+    nvidia.com/gpu.present: "true"
+    nvidia.com/gpu.product: NVIDIA-GB10
+    kubernetes.io/hostname: spark-38fc
+    kubernetes.io/arch: arm64
+status:
+  allocatable:
+    nvidia.com/gpu: "1"
+    rdma/rdma_shared_device_a: "63"
+    rdma/rdma_shared_device_b: "63"
+---
+apiVersion: nvcre.nvidia.com/v1alpha1
+kind: Certification
+metadata:
+  name: gb10-cert
+  namespace: default
+spec:
+  target:
+    nodeNames:
+      - spark-1ac4
+      - spark-38fc
+  nodesPerJob: 2
+  gpusPerNode: 1
+  enableMNNVL: false
+  image: gb10-nccl:local
+  nicResources:
+    - name: rdma/rdma_shared_device_a
+      quantity: 1
+    - name: rdma/rdma_shared_device_b
+      quantity: 1
+  maxBytes: 1G
+  numIterations: 20
+  numCycles: 2
+  categories:
+    - domain: communication
+      variant: nccl-all-gather

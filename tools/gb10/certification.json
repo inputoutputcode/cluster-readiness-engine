@@ -45,6 +45,10 @@
       },
       {
         "domain": "communication",
+        "variant": "nccl-all-gather"
+      },
+      {
+        "domain": "communication",
         "variant": "nccl-alltoall"
       },
       {

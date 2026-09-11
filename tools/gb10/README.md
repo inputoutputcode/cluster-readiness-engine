@@ -61,9 +61,9 @@ go build -o bin/nvcrectl ./cmd/nvcrectl/
   --results-file /tmp/gb10-certification.json
 ```
 
-The recommended sample runs five categories: per-node DCGM level-4 diagnostics,
-per-node C2C coherent-memory validation, dual-rail NCCL all-reduce, dual-rail
-NCCL all-to-all, and a random-initialized Llama 3.2 1B DDP training run. The
+The recommended sample runs six categories: per-node DCGM level-4 diagnostics,
+per-node C2C coherent-memory validation, dual-rail NCCL all-reduce, all-gather,
+and all-to-all, plus a random-initialized Llama 3.2 1B DDP training run. The
 DCGM category retains its `nvcr.io/nvidia/cloud-native/dcgm` image instead of
 inheriting the suite-wide GB10 workload image. It enforces the provisional
 dual-rail threshold observed during local validation (`busBandwidthGBps >= 18`),
