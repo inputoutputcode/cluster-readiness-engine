@@ -163,8 +163,9 @@ class GB10Test(unittest.TestCase):
         self.assertEqual(llama_trainer["numProcPerNode"], 1)
         self.assertEqual(llama_trainer["command"], ["/bin/bash", "-ceu"])
         for argument in ["torchrun", "PET_NNODES", "PET_NPROC_PER_NODE", "PET_NODE_RANK",
-                         "PET_MASTER_ADDR", "PET_MASTER_PORT", "--rdzv-backend=c10d"]:
+                         "--master-addr", "PET_MASTER_ADDR", "--master-port", "PET_MASTER_PORT"]:
             self.assertIn(argument, llama_trainer["args"][0])
+        self.assertNotIn("--rdzv-", llama_trainer["args"][0])
         self.assertEqual(llama["jobTemplate"]["spec"]["goodputMeasurement"]["logProfileRef"],
                          "megatron-training")
         alltoall_args = by_variant["nccl-alltoall"]["spec"]["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"]
