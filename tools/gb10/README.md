@@ -101,7 +101,7 @@ docker build -t gb10-nccl:local tools/gb10
 docker save gb10-nccl:local -o /tmp/gb10-nccl.tar
 sudo k3s ctr images import /tmp/gb10-nccl.tar
 scp /tmp/gb10-nccl.tar spark-1ac4:/tmp/gb10-nccl.tar
-ssh spark-1ac4 'sudo k3s ctr images import /tmp/gb10-nccl.tar'
+ssh -t spark-1ac4 'sudo k3s ctr images import /tmp/gb10-nccl.tar'
 ```
 
 This example assumes the build runs on spark-38fc. Alternatively use a registry
