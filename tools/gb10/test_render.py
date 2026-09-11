@@ -155,10 +155,16 @@ class GB10Test(unittest.TestCase):
         self.assertEqual(c2c["jobTemplate"]["spec"]["c2cMeasurement"]["sampleInterval"], "1s")
         self.assertEqual(c2c["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["numNodes"], 1)
         self.assertEqual(c2c["orchestration"]["execution"]["maxConcurrent"], 1)
+        self.assertEqual(c2c["validation"]["performance"]["thresholds"]["thresholds"]["c2cVerified"],
+                         "value >= 1")
         llama = by_variant["llama32-1b"]["spec"]
         llama_trainer = llama["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]
         self.assertEqual(llama_trainer["numNodes"], 2)
         self.assertEqual(llama_trainer["numProcPerNode"], 1)
+        self.assertEqual(llama_trainer["command"], ["/bin/bash", "-ceu"])
+        for argument in ["torchrun", "PET_NNODES", "PET_NPROC_PER_NODE", "PET_NODE_RANK",
+                         "PET_MASTER_ADDR", "PET_MASTER_PORT", "--rdzv-backend=c10d"]:
+            self.assertIn(argument, llama_trainer["args"][0])
         self.assertEqual(llama["jobTemplate"]["spec"]["goodputMeasurement"]["logProfileRef"],
                          "megatron-training")
         alltoall_args = by_variant["nccl-alltoall"]["spec"]["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"]

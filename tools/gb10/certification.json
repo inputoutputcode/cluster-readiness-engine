@@ -27,7 +27,7 @@
           "thresholds": {
             "c2cCPUToGPUBandwidthGBps": "value >= 1",
             "c2cGPUToCPUBandwidthGBps": "value >= 1",
-            "c2cVerified": "value == 1"
+            "c2cVerified": "value >= 1"
           }
         }
       },

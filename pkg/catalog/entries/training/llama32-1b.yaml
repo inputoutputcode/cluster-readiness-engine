@@ -92,13 +92,20 @@ jobTemplate:
           name: llama32-1b-runtime
         trainer:
           command:
-          - python3
+          - /bin/bash
+          - -ceu
           args:
-          - /usr/local/bin/gb10-llama32-1b.py
-          - --steps
-          - "{{ .MaxSteps }}"
-          - --sequence-length
-          - "1024"
+          - |
+            exec torchrun \
+              --nnodes="${PET_NNODES}" \
+              --nproc-per-node="${PET_NPROC_PER_NODE}" \
+              --node-rank="${PET_NODE_RANK}" \
+              --rdzv-backend=c10d \
+              --rdzv-endpoint="${PET_MASTER_ADDR}:${PET_MASTER_PORT}" \
+              --rdzv-id=gb10-llama32-1b \
+              /usr/local/bin/gb10-llama32-1b.py \
+              --steps "{{ .MaxSteps }}" \
+              --sequence-length 1024
           image: nvcr.io/nvidia/pytorch:26.01-py3
           numNodes: {{ .NodesPerJob }}
           numProcPerNode: {{ .GpusPerNode }}
