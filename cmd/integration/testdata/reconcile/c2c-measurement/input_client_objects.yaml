@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: trainer.kubeflow.org/v1alpha1
+kind: TrainJob
+metadata:
+  name: test-c2c-job-workload
+  namespace: default
+spec:
+  runtimeRef:
+    kind: TrainingRuntime
+    name: test-runtime
+  trainer:
+    image: test-image:latest
+    command: [gb10-c2c]
+    numNodes: 1
+---
+apiVersion: nvcre.nvidia.com/v1alpha1
+kind: Job
+metadata:
+  name: test-c2c-job
+  namespace: default
+spec:
+  workload:
+    trainJob:
+      runtimeRef:
+        kind: TrainingRuntime
+        name: test-runtime
+      trainer:
+        image: test-image:latest
+        command: [gb10-c2c]
+        numNodes: 1
+status:
+  conditions:
+    - type: InProgress
+      status: "True"
+      reason: WorkloadRunning
+      lastTransitionTime: "2026-09-11T10:00:00Z"
+  workloadRef:
+    apiVersion: trainer.kubeflow.org/v1alpha1
+    kind: TrainJob
+    name: test-c2c-job-workload
+    namespace: default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-c2c-job-workload-node-0-0
+  namespace: default
+  labels:
+    jobset.sigs.k8s.io/jobset-name: test-c2c-job-workload
+    jobset.sigs.k8s.io/replicatedjob-name: node
+    batch.kubernetes.io/job-completion-index: "0"
+spec:
+  containers:
+    - name: node
+      image: test-image:latest
+status:
+  phase: Running
+---
+apiVersion: nvcre.nvidia.com/v1alpha1
+kind: C2CMeasurement
+metadata:
+  name: test-c2c
+  namespace: default
+spec:
+  jobRef:
+    apiGroup: nvcre.nvidia.com
+    kind: Job
+    name: test-c2c-job
+  sampleInterval: 1s

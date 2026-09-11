@@ -1,0 +1,89 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+dependencies:
+- apiVersion: trainer.kubeflow.org/v1alpha1
+  kind: TrainingRuntime
+  metadata:
+    labels:
+      app: gb10-c2c
+      trainer.kubeflow.org/framework: torch
+    name: gb10-c2c-runtime
+  spec:
+    mlPolicy:
+      numNodes: 1
+      torch:
+        numProcPerNode: 1
+    template:
+      spec:
+        replicatedJobs:
+        - name: node
+          template:
+            metadata:
+              labels:
+                trainer.kubeflow.org/trainjob-ancestor-step: trainer
+            spec:
+              backoffLimit: 0
+              template:
+                spec:
+                  runtimeClassName: nvidia
+                  restartPolicy: Never
+                  containers:
+                  - name: node
+                    image: nvcr.io/nvidia/pytorch:26.01-py3
+                    resources:
+                      limits:
+                        nvidia.com/gpu: "1"
+                      requests:
+                        nvidia.com/gpu: "1"
+                  tolerations:
+                  - key: kubernetes.io/arch
+                    operator: Equal
+                    value: arm64
+                    effect: NoSchedule
+                  - key: nvidia.com/gpu
+                    operator: Exists
+                    effect: NoSchedule
+jobTemplate:
+  spec:
+    c2cMeasurement:
+      sampleInterval: 1s
+    nodeHealthMonitor:
+      cel:
+        expression: node.spec.unschedulable == true
+    workload:
+      trainJob:
+        runtimeRef:
+          kind: TrainingRuntime
+          name: gb10-c2c-runtime
+        trainer:
+          command:
+          - /usr/local/bin/gb10-c2c
+          args:
+          - --sizes
+          - 4M,64M,1G
+          - --samples
+          - "5"
+          image: nvcr.io/nvidia/pytorch:26.01-py3
+          numNodes: 1
+          numProcPerNode: 1
+orchestration:
+  execution:
+{{- if gt .MaxConcurrent 0 }}
+    maxConcurrent: {{ .MaxConcurrent }}
+{{- end }}
+    timeoutPerJob: {{ .TimeoutPerJob }}
+  iterations: 1
+{{- if .Thresholds }}
+validation:
+  performance:
+    enabled: true
+{{- if .MeasurementTimeout }}
+    measurementTimeout: {{ .MeasurementTimeout }}
+{{- end }}
+    thresholds:
+      thresholds:
+{{- range $k, $v := .Thresholds }}
+        {{ $k }}: "{{ $v }}"
+{{- end }}
+{{- end }}

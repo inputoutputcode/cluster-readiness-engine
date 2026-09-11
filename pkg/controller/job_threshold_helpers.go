@@ -50,6 +50,14 @@ func findJobBandwidthMeasurement(ctx context.Context, c client.Reader, job *nvcr
 	return &measurements.Items[0]
 }
 
+func findJobC2CMeasurement(ctx context.Context, c client.Reader, job *nvcrev1alpha1.Job) *nvcrev1alpha1.C2CMeasurement {
+	var measurements nvcrev1alpha1.C2CMeasurementList
+	if err := c.List(ctx, &measurements, matchingJobRef(job.Namespace, job.Name)...); err != nil || len(measurements.Items) == 0 {
+		return nil
+	}
+	return &measurements.Items[0]
+}
+
 // collectJobMeasuredValues gathers metric values from BandwidthMeasurement and
 // GoodputMeasurement status fields. Keys match the threshold registry.
 func collectJobMeasuredValues(ctx context.Context, c client.Reader, job *nvcrev1alpha1.Job) map[string]float64 {
@@ -58,6 +66,23 @@ func collectJobMeasuredValues(ctx context.Context, c client.Reader, job *nvcrev1
 	if bm := findJobBandwidthMeasurement(ctx, c, job); bm != nil && len(bm.Status.Results) > 0 {
 		values["busBandwidthGBps"] = maxBusBandwidth(bm.Status.Results)
 		values["algBandwidthGBps"] = maxAlgBandwidth(bm.Status.Results)
+	}
+
+	if cm := findJobC2CMeasurement(ctx, c, job); cm != nil &&
+		meta.IsStatusConditionTrue(cm.Status.Conditions, nvcrev1alpha1.C2CMeasurementComplete) {
+		if value, ok := c2cDirectionBandwidth(cm.Status.Results, nvcrev1alpha1.C2CDirectionCPUToGPU); ok {
+			values["c2cCPUToGPUBandwidthGBps"] = value
+		}
+		if value, ok := c2cDirectionBandwidth(cm.Status.Results, nvcrev1alpha1.C2CDirectionGPUToCPU); ok {
+			values["c2cGPUToCPUBandwidthGBps"] = value
+		}
+		values["c2cVerified"] = 1
+		for _, result := range cm.Status.Results {
+			if !result.Verified {
+				values["c2cVerified"] = 0
+				break
+			}
+		}
 	}
 
 	// Goodput-derived values are provisional until the measurement's Complete
@@ -80,6 +105,30 @@ func collectJobMeasuredValues(ctx context.Context, c client.Reader, job *nvcrev1
 		}
 	}
 	return values
+}
+
+// c2cDirectionBandwidth returns the slowest allocation path at the largest
+// measured size. Every memory type must clear the threshold; a fast path must
+// not hide a broken or unexpectedly slow path.
+func c2cDirectionBandwidth(results []nvcrev1alpha1.C2CResult, direction string) (float64, bool) {
+	var largest int64
+	for _, result := range results {
+		if result.Direction == direction && result.SizeBytes > largest {
+			largest = result.SizeBytes
+		}
+	}
+	var value float64
+	found := false
+	for _, result := range results {
+		if result.Direction != direction || result.SizeBytes != largest {
+			continue
+		}
+		bandwidth := parseStallFloat(result.BandwidthGBps)
+		if !found || bandwidth < value {
+			value, found = bandwidth, true
+		}
+	}
+	return value, found
 }
 
 // isJobAwaitingThresholdEvaluation returns true when a succeeded Job has performance

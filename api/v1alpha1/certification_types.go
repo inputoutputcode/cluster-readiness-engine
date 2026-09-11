@@ -341,7 +341,8 @@ type CategoryOptions struct {
 	NumCycles *int32 `json:"numCycles,omitempty"`
 
 	// thresholds defines performance thresholds as CEL expressions.
-	// Keys are metric names (e.g., "busBandwidthGBps", "goodputRatio").
+	// Keys are metric names (e.g., "busBandwidthGBps", "goodputRatio",
+	// "c2cCPUToGPUBandwidthGBps").
 	// Values are CEL expressions using a `value` variable (float64).
 	// Example: {"busBandwidthGBps": "value >= 900", "avgStepTimeSec": "value <= 3.0"}
 	// +optional

@@ -32,6 +32,7 @@ import (
 
 const (
 	defaultBandwidthMeasurementRequeueInterval = 15 * time.Second
+	measurementInProgressMessage               = "Referenced Job is running, measurement in progress"
 
 	bandwidthMeasurementFinalizer = "nvcre.nvidia.com/bandwidthmeasurement-finalizer"
 
@@ -332,7 +333,7 @@ func (r *BandwidthMeasurementReconciler) handleRunning(ctx context.Context, meas
 		Status:             metav1.ConditionTrue,
 		ObservedGeneration: measurement.Generation,
 		Reason:             reasonBandwidthJobRunning,
-		Message:            "Referenced Job is running, measurement in progress",
+		Message:            measurementInProgressMessage,
 	})
 
 	// Emit Prometheus metrics.

@@ -65,7 +65,7 @@
           "observedGeneration": 1,
           "lastTransitionTime": null,
           "reason": "UnknownThresholdKey",
-          "message": "unknown threshold key(s) [avgTFLOPSPerGPU]; valid keys: [busBandwidthGBps, algBandwidthGBps, goodputRatio, avgTFLOPsPerGPU, avgStepTimeSec]"
+          "message": "unknown threshold key(s) [avgTFLOPSPerGPU]; valid keys: [busBandwidthGBps, algBandwidthGBps, goodputRatio, avgTFLOPsPerGPU, avgStepTimeSec, c2cCPUToGPUBandwidthGBps, c2cGPUToCPUBandwidthGBps, c2cVerified]"
         }
       ],
       "workloadRef": {

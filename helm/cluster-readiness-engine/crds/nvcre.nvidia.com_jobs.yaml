@@ -66,6 +66,19 @@ spec:
                 x-kubernetes-validations:
                 - message: bandwidthMeasurement is immutable
                   rule: self == oldSelf
+              c2cMeasurement:
+                description: |-
+                  c2cMeasurement configures automatic collection of CPU-GPU coherent-memory
+                  bandwidth, latency, and correctness results from worker logs.
+                properties:
+                  sampleInterval:
+                    description: 'sampleInterval is how often worker logs are sampled.
+                      Default: 60s.'
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: c2cMeasurement is immutable
+                  rule: self == oldSelf
               checkpoint:
                 description: |-
                   checkpoint configures checkpoint-based restart for the workload.
@@ -188,7 +201,8 @@ spec:
                   Propagated from WorkflowSpec.Validation.Performance.Thresholds by the
                   Workflow controller during Job creation. The Job controller evaluates them
                   after workload success and sets ValidationFailed if any threshold is violated.
-                  Keys: "busBandwidthGBps", "goodputRatio", "avgTFLOPsPerGPU", "avgStepTimeSec", etc.
+                  Keys include "busBandwidthGBps", "goodputRatio", "avgTFLOPsPerGPU",
+                  "avgStepTimeSec", and the C2C direction bandwidth metrics.
                   Values: CEL expressions using `value` variable, e.g. "value >= 900"
                 type: object
               workload:

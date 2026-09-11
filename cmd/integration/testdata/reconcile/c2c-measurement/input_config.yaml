@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+waitFor:
+  kind: C2CMeasurement
+  name: test-c2c
+  namespace: default
+  condition: Measuring
+collect:
+  - kind: C2CMeasurement
+    name: test-c2c
+    namespace: default

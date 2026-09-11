@@ -96,6 +96,7 @@ Goodput metrics are cleaned up at specific lifecycle events to prevent stale dat
 | Job restarts from checkpoint | Instantaneous metrics (TFLOPS, avg step time) | All cumulative metrics |
 | GoodputMeasurement deleted | All goodput metrics for that measurement | — |
 | BandwidthMeasurement completes or is deleted | All NCCL bandwidth metrics for that measurement | — |
+| C2CMeasurement completes or is deleted | All C2C metrics for that measurement | — |
 
 ## NCCL bandwidth metrics
 
@@ -110,7 +111,21 @@ The `nccl_test` label identifies the collective operation (e.g., `all_reduce`, `
 
 NCCL bandwidth metrics are cleaned up when a BandwidthMeasurement is deleted.
 
-**Cardinality at scale:** NCCL metrics include a `message_size_bytes` label (typically 20-30 values per test). With 3 test types and 10 concurrent measurements, expect ~600-900 NCCL time series. Goodput metrics produce 10 series per measurement. At 100+ concurrent Jobs, monitor your Prometheus memory and consider increasing `sampleInterval` or limiting concurrent Certifications.
+## CPU-GPU C2C metrics
+
+All C2C metrics share the labels `namespace`, `measurement`, `job`,
+`workflow`, `direction`, `memory_type`, and `message_size_bytes`.
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `nvcre_c2c_bandwidth_gbps` | Gauge | CPU-GPU coherent-memory bandwidth in decimal GB/s |
+| `nvcre_c2c_latency_microseconds` | Gauge | Average coherent-memory operation latency in microseconds |
+| `nvcre_c2c_verified` | Gauge | `1` when cross-processor data verification passed, otherwise `0` |
+
+C2C metrics are cleaned up when the measurement completes or is deleted. The
+measurement's status and certification report retain the final results.
+
+**Cardinality at scale:** NCCL metrics include a `message_size_bytes` label (typically 20-30 values per test). With 3 test types and 10 concurrent measurements, expect ~600-900 NCCL time series. Goodput metrics produce 10 series per measurement. The default GB10 C2C benchmark produces 12 result groups and three metrics per group while active. At 100+ concurrent Jobs, monitor your Prometheus memory and consider increasing `sampleInterval` or limiting concurrent Certifications.
 
 ## Topology metrics
 

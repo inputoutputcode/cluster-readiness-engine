@@ -253,6 +253,16 @@ func newRootCommand() *cobra.Command {
 			}).SetupWithManager(mgr); err != nil {
 				return fmt.Errorf("unable to create controller BandwidthMeasurement: %w", err)
 			}
+			if err := (&controller.C2CMeasurementReconciler{
+				Client:                  mgr.GetClient(),
+				APIReader:               mgr.GetAPIReader(),
+				Scheme:                  mgr.GetScheme(),
+				Clientset:               clientset,
+				LogFetcher:              podlogs.NewKubernetesLogFetcher(clientset),
+				MaxConcurrentReconciles: concurrency.measurementMaxConcurrentReconciles,
+			}).SetupWithManager(mgr); err != nil {
+				return fmt.Errorf("unable to create controller C2CMeasurement: %w", err)
+			}
 			if err := (&controller.WorkloadRunReconciler{
 				Client:                  mgr.GetClient(),
 				Scheme:                  mgr.GetScheme(),
@@ -287,7 +297,8 @@ func newRootCommand() *cobra.Command {
 		"Maximum number of concurrent reconciles for Job, Workflow, Certification, and WorkloadRun controllers.")
 	cmd.Flags().IntVar(&concurrency.measurementMaxConcurrentReconciles, "measurement-max-concurrent-reconciles",
 		defaultMeasurementMaxConcurrentReconciles,
-		"Maximum number of concurrent reconciles for GoodputMeasurement and BandwidthMeasurement controllers.")
+		"Maximum number of concurrent reconciles for GoodputMeasurement, BandwidthMeasurement, "+
+			"and C2CMeasurement controllers.")
 	cmd.Flags().BoolVar(&secureMetrics, "metrics-secure", true,
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	cmd.Flags().StringVar(&webhookCertPath, "webhook-cert-path", "",

@@ -15,6 +15,8 @@ import (
 	"github.com/google/cel-go/cel"
 )
 
+const unitGBPerSecond = "GB/s"
+
 // Definition describes a known threshold key.
 type Definition struct {
 	// Key is the camelCase metric name with unit suffix.
@@ -28,11 +30,14 @@ type Definition struct {
 // Registry lists all known threshold keys. Unknown keys are rejected
 // by ValidateKeys.
 var Registry = []Definition{
-	{Key: "busBandwidthGBps", Unit: "GB/s", Description: "Bus bandwidth (from BandwidthMeasurement)"},
-	{Key: "algBandwidthGBps", Unit: "GB/s", Description: "Algorithm bandwidth (from BandwidthMeasurement)"},
+	{Key: "busBandwidthGBps", Unit: unitGBPerSecond, Description: "Bus bandwidth (from BandwidthMeasurement)"},
+	{Key: "algBandwidthGBps", Unit: unitGBPerSecond, Description: "Algorithm bandwidth (from BandwidthMeasurement)"},
 	{Key: "goodputRatio", Unit: "ratio (0-1)", Description: "Goodput ratio (from GoodputMeasurement)"},
 	{Key: "avgTFLOPsPerGPU", Unit: "TFLOPS", Description: "Average TFLOPS per GPU (from GoodputMeasurement)"},
 	{Key: "avgStepTimeSec", Unit: "seconds", Description: "Average step time (from GoodputMeasurement)"},
+	{Key: "c2cCPUToGPUBandwidthGBps", Unit: unitGBPerSecond, Description: "CPU-to-GPU coherent-memory bandwidth (from C2CMeasurement)"},
+	{Key: "c2cGPUToCPUBandwidthGBps", Unit: unitGBPerSecond, Description: "GPU-to-CPU coherent-memory bandwidth (from C2CMeasurement)"},
+	{Key: "c2cVerified", Unit: "boolean (0-1)", Description: "CPU-GPU coherent-memory correctness (from C2CMeasurement)"},
 }
 
 var registryKeys map[string]bool

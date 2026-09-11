@@ -1,0 +1,71 @@
+{
+  "C2CMeasurement/test-c2c": {
+    "kind": "C2CMeasurement",
+    "apiVersion": "nvcre.nvidia.com/v1alpha1",
+    "metadata": {
+      "name": "test-c2c",
+      "namespace": "default",
+      "finalizers": [
+        "nvcre.nvidia.com/c2cmeasurement-finalizer"
+      ]
+    },
+    "spec": {
+      "jobRef": {
+        "apiGroup": "nvcre.nvidia.com",
+        "kind": "Job",
+        "name": "test-c2c-job"
+      },
+      "sampleInterval": "1s"
+    },
+    "status": {
+      "results": [
+        {
+          "direction": "cpuToGPU",
+          "memoryType": "managed",
+          "sizeBytes": 67108864,
+          "bandwidthGBps": "91.25",
+          "latencyUs": "735.42",
+          "samples": 5,
+          "verified": true
+        },
+        {
+          "direction": "gpuToCPU",
+          "memoryType": "managed",
+          "sizeBytes": 67108864,
+          "bandwidthGBps": "82.50",
+          "latencyUs": "813.44",
+          "samples": 5,
+          "verified": true
+        },
+        {
+          "direction": "cpuToGPU",
+          "memoryType": "pinned",
+          "sizeBytes": 67108864,
+          "bandwidthGBps": "73.75",
+          "latencyUs": "909.95",
+          "samples": 5,
+          "verified": true
+        },
+        {
+          "direction": "gpuToCPU",
+          "memoryType": "pinned",
+          "sizeBytes": 67108864,
+          "bandwidthGBps": "70.00",
+          "latencyUs": "958.70",
+          "samples": 5,
+          "verified": true
+        }
+      ],
+      "conditions": [
+        {
+          "type": "Measuring",
+          "status": "True",
+          "observedGeneration": 1,
+          "lastTransitionTime": null,
+          "reason": "JobRunning",
+          "message": "Referenced Job is running, measurement in progress"
+        }
+      ]
+    }
+  }
+}

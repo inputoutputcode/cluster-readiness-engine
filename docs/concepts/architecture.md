@@ -6,7 +6,7 @@ description: How the NVIDIA Cluster Readiness Engine controller is structured an
 ---
 
 
-The NVIDIA Cluster Readiness Engine is a Kubebuilder-based Kubernetes controller. A single binary runs six reconcilers that compose in a three-tier hierarchy modeled after Kubernetes' own Deployment → ReplicaSet → Pod pattern.
+The NVIDIA Cluster Readiness Engine is a Kubebuilder-based Kubernetes controller. A single binary runs seven reconcilers that compose in a three-tier hierarchy modeled after Kubernetes' own Deployment → ReplicaSet → Pod pattern.
 
 ## Resource hierarchy
 
@@ -26,6 +26,7 @@ J1 -.->|monitors| N
 J2 -.->|monitors| N
 GM[GoodputMeasurement] -.->|watches| J0
 BM[BandwidthMeasurement] -.->|watches| J2
+C2C[C2CMeasurement] -.->|watches| J1
 ```
 
 ### Certification
@@ -38,7 +39,7 @@ Manages a single test run for one category. It pulls the `WorkflowSpec` from the
 
 ### Job
 
-Creates the actual workload (a `TrainJob`) via the adapter pattern. Manages health monitoring via `NodeFailureDetector`, optionally creates a `GoodputMeasurement` or `BandwidthMeasurement` to parse output, and handles checkpoint restart.
+Creates the actual workload (a `TrainJob`) via the adapter pattern. Manages health monitoring via `NodeFailureDetector`, optionally creates a `GoodputMeasurement`, `BandwidthMeasurement`, or `C2CMeasurement` to parse output, and handles checkpoint restart.
 
 ### Supporting resources
 
@@ -46,6 +47,7 @@ Creates the actual workload (a `TrainJob`) via the adapter pattern. Manages heal
 |----------|---------|
 | `GoodputMeasurement` | Watches a Job's pod logs via a LogProfile, computes the goodput ratio |
 | `BandwidthMeasurement` | Parses NCCL log output, computes per-bus bandwidth metrics |
+| `C2CMeasurement` | Parses CPU-GPU coherent-memory bandwidth, latency, and correctness results |
 | `LogProfile` | Cluster-scoped; defines regex patterns with named capture groups for log parsing |
 
 ## Controller patterns

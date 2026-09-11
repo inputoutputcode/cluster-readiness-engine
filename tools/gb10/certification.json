@@ -18,7 +18,40 @@
     "maxBytes": "1G",
     "numIterations": 20,
     "numCycles": 2,
-    "thresholds": {"busBandwidthGBps": "value >= 18"},
-    "categories": [{"domain": "communication", "variant": "nccl-all-reduce"}]
+    "categories": [
+      {
+        "domain": "diagnostics",
+        "variant": "gb10-c2c",
+        "options": {
+          "maxConcurrent": 1,
+          "thresholds": {
+            "c2cCPUToGPUBandwidthGBps": "value >= 1",
+            "c2cGPUToCPUBandwidthGBps": "value >= 1",
+            "c2cVerified": "value == 1"
+          }
+        }
+      },
+      {
+        "domain": "communication",
+        "variant": "nccl-all-reduce",
+        "options": {"thresholds": {"busBandwidthGBps": "value >= 18"}}
+      },
+      {
+        "domain": "communication",
+        "variant": "nccl-alltoall"
+      },
+      {
+        "domain": "training",
+        "variant": "llama32-1b",
+        "options": {
+          "maxSteps": 50,
+          "resources": {
+            "limits": {"cpu": "20", "memory": "112Gi"},
+            "requests": {"cpu": "8", "memory": "64Gi"}
+          },
+          "thresholds": {"goodputRatio": "value >= 0.95"}
+        }
+      }
+    ]
   }
 }

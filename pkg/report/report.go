@@ -94,6 +94,8 @@ type CategoryReport struct {
 	Domains []DomainReport `json:"domains,omitempty"`
 	// Communication bandwidth results (single-group: one row per size).
 	Bandwidth []BandwidthRow `json:"bandwidth,omitempty"`
+	// C2C contains CPU-GPU coherent-memory results.
+	C2C []C2CRow `json:"c2c,omitempty"`
 	// Per-group bandwidth results (multi-group: one row per group).
 	GroupBandwidth []GroupBandwidthRow `json:"groupBandwidth,omitempty"`
 	// Diagnose results from adaptive fault isolation.
@@ -152,6 +154,19 @@ type BandwidthRow struct {
 	AlgBW   string `json:"algBW"`
 	BusBW   string `json:"busBW"`
 	Samples int    `json:"samples"`
+}
+
+// C2CRow holds one CPU-GPU coherent-memory result.
+type C2CRow struct {
+	Direction  string   `json:"direction"`
+	MemoryType string   `json:"memoryType"`
+	Nodes      []string `json:"nodes,omitempty"`
+	Size       string   `json:"size"`
+	Bandwidth  string   `json:"bandwidth"`
+	Latency    string   `json:"latency"`
+	Samples    int      `json:"samples"`
+	Verified   bool     `json:"verified"`
+	sizeBytes  int64
 }
 
 // CliqueReport holds per-clique validation status.
@@ -710,6 +725,55 @@ func PopulateCategoryFromWorkflow(
 			}
 		}
 	}
+
+	cat.C2C = collectC2CRows(ctx, c, wf.Namespace, workflowJobs, orch)
+}
+
+func collectC2CRows(
+	ctx context.Context, c client.Client, namespace string,
+	workflowJobs map[string]bool, orch *nvcrev1alpha1.OrchestrationStatus,
+) []C2CRow {
+	var measurements nvcrev1alpha1.C2CMeasurementList
+	if err := c.List(ctx, &measurements, client.InNamespace(namespace)); err != nil {
+		return nil
+	}
+	jobNodes := make(map[string][]string)
+	if orch != nil {
+		for _, group := range orch.Groups {
+			if group.JobRef != nil {
+				jobNodes[group.JobRef.Name] = group.Nodes
+			}
+		}
+	}
+	var rows []C2CRow
+	for _, measurement := range measurements.Items {
+		if !workflowJobs[measurement.Spec.JobRef.Name] {
+			continue
+		}
+		for _, result := range measurement.Status.Results {
+			rows = append(rows, C2CRow{
+				Direction: result.Direction, MemoryType: result.MemoryType,
+				Nodes: jobNodes[measurement.Spec.JobRef.Name],
+				Size:  humanSize(result.SizeBytes), Bandwidth: result.BandwidthGBps + " GB/s",
+				Latency: result.LatencyUs + " us", Samples: result.Samples, Verified: result.Verified,
+				sizeBytes: result.SizeBytes,
+			})
+		}
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		nodesI, nodesJ := strings.Join(rows[i].Nodes, ","), strings.Join(rows[j].Nodes, ",")
+		if nodesI != nodesJ {
+			return nodesI < nodesJ
+		}
+		if rows[i].MemoryType != rows[j].MemoryType {
+			return rows[i].MemoryType < rows[j].MemoryType
+		}
+		if rows[i].Direction != rows[j].Direction {
+			return rows[i].Direction < rows[j].Direction
+		}
+		return rows[i].sizeBytes < rows[j].sizeBytes
+	})
+	return rows
 }
 
 // buildGroupBandwidthRows maps BandwidthMeasurements to groups and returns
@@ -1358,7 +1422,36 @@ func printCategoryCard(w io.Writer, cat *CategoryReport) {
 		}
 	}
 
+	printC2CRows(w, cat.C2C)
+
 	printCardBottom(w)
+}
+
+func printC2CRows(w io.Writer, rows []C2CRow) {
+	if len(rows) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "│%s│\n", pad(boxWidth-2))
+	header := "CPU-GPU C2C:"
+	_, _ = fmt.Fprintf(w, "│  %s%s│\n", header, pad(boxWidth-4-len(header)))
+	lastNodes := ""
+	for _, row := range rows {
+		nodes := strings.Join(row.Nodes, ", ")
+		if nodes != "" && nodes != lastNodes {
+			printBoxLine(w, "    "+nodes+":")
+			lastNodes = nodes
+		}
+		verified := "verified"
+		if !row.Verified {
+			verified = "FAILED"
+		}
+		line := fmt.Sprintf("      %s/%s %s: %s, %s (%s)", row.Direction, row.MemoryType,
+			row.Size, row.Bandwidth, row.Latency, verified)
+		if len(line) > boxWidth-2 {
+			line = line[:boxWidth-5] + "..."
+		}
+		_, _ = fmt.Fprintf(w, "│%s%s│\n", line, pad(boxWidth-2-len(line)))
+	}
 }
 
 // printDomainBox prints a nested domain sub-box within a category card.

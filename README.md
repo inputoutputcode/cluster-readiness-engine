@@ -33,9 +33,10 @@ flowchart LR
     J -->|adapter| T[TrainJob and other workloads]
     J -.-> G[GoodputMeasurement]
     J -.-> B[BandwidthMeasurement]
+    J -.-> C2C[C2CMeasurement]
 ```
 
-A Certification creates one Workflow per catalog category. A WorkloadRun is the single-run entry point: it creates one Workflow directly from its inline workload spec, bypassing the catalog. This is what `nvcrectl workloadrun run` uses for ad-hoc workloads. Each Workflow creates a Job from its template. The Job creates the workload through an adapter, for example a Kubeflow Trainer TrainJob. Measurement resources parse pod logs with LogProfile regex patterns and compute goodput and bandwidth. When a node fails, NVCRE records it in the certification result with a reason. NVCRE does not modify nodes; quarantine is left to your platform.
+A Certification creates one Workflow per catalog category. A WorkloadRun is the single-run entry point: it creates one Workflow directly from its inline workload spec, bypassing the catalog. This is what `nvcrectl workloadrun run` uses for ad-hoc workloads. Each Workflow creates a Job from its template. The Job creates the workload through an adapter, for example a Kubeflow Trainer TrainJob. Measurement resources parse pod logs and compute goodput, NCCL bandwidth, and CPU-GPU coherent-memory results. When a node fails, NVCRE records it in the certification result with a reason. NVCRE does not modify nodes; quarantine is left to your platform.
 
 ## Quickstart
 

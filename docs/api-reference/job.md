@@ -27,7 +27,7 @@ Each `FailedNode` entry has:
 | `reason` | string | `HardwareFailureDetected`, `ThresholdViolation`, or `WorkloadFailed` |
 | `message` | string | Detailed failure message |
 
-`GoodputMeasurement` and `BandwidthMeasurement` resources reference the Job via their own `spec.jobRef` — the Job does not hold references to them.
+`GoodputMeasurement`, `BandwidthMeasurement`, and `C2CMeasurement` resources reference the Job via their own `spec.jobRef` — the Job does not hold references to them.
 
 ## Naming
 
@@ -37,6 +37,6 @@ Jobs are named `<workflowName>-job`.
 
 1. Creates the workload via the adapter pattern (selects adapter from `WorkloadSpec`).
 2. Runs `NodeFailureDetector` concurrently.
-3. Optionally creates `GoodputMeasurement` or `BandwidthMeasurement`.
+3. Optionally creates `GoodputMeasurement`, `BandwidthMeasurement`, or `C2CMeasurement`.
 4. On workload completion, evaluates health results and performance thresholds.
 5. Marks Succeeded or Failed.

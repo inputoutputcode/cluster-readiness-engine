@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+goodputComplete: false
+result: ""
+avgTFLOPSPerGPU: ""
+avgStepTimeSec: ""
+busBW: "22.36"
+algBW: "22.36"
+c2cComplete: true
+cpuToGPUBW: "91.25"
+gpuToCPUBW: "82.50"

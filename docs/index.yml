@@ -83,6 +83,8 @@ navigation:
         path: api-reference/goodput-measurement.md
       - page: BandwidthMeasurement
         path: api-reference/bandwidth-measurement.md
+      - page: C2CMeasurement
+        path: api-reference/c2c-measurement.md
       - page: LogProfile
         path: api-reference/logprofile.md
       - page: Validation Results

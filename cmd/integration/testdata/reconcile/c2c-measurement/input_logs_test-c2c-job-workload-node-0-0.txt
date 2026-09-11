@@ -1,0 +1,5 @@
+NVCRE_C2C_CAPABILITY device=NVIDIA GB10 concurrent_managed=1 pageable_memory=1 mapped_host=1
+NVCRE_C2C_RESULT direction=cpuToGPU memory=managed size_bytes=67108864 bandwidth_gbps=91.25 latency_us=735.42 samples=5 verified=true
+NVCRE_C2C_RESULT direction=gpuToCPU memory=managed size_bytes=67108864 bandwidth_gbps=82.50 latency_us=813.44 samples=5 verified=true
+NVCRE_C2C_RESULT direction=cpuToGPU memory=pinned size_bytes=67108864 bandwidth_gbps=73.75 latency_us=909.95 samples=5 verified=true
+NVCRE_C2C_RESULT direction=gpuToCPU memory=pinned size_bytes=67108864 bandwidth_gbps=70.00 latency_us=958.70 samples=5 verified=true

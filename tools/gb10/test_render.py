@@ -148,6 +148,22 @@ class GB10Test(unittest.TestCase):
         base = json.loads(subprocess.check_output([
             os.environ["NVCRECTL"], "certification", "render", "--platform", "onprem", "--output", "json",
             str(Path(__file__).with_name("certification.json"))], text=True))
+        self.assertEqual(len(base), 4)
+        by_variant = {wf["metadata"]["labels"]["nvcre.nvidia.com/category-variant"]: wf
+                      for wf in base}
+        c2c = by_variant["gb10-c2c"]["spec"]
+        self.assertEqual(c2c["jobTemplate"]["spec"]["c2cMeasurement"]["sampleInterval"], "1s")
+        self.assertEqual(c2c["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["numNodes"], 1)
+        self.assertEqual(c2c["orchestration"]["execution"]["maxConcurrent"], 1)
+        llama = by_variant["llama32-1b"]["spec"]
+        llama_trainer = llama["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]
+        self.assertEqual(llama_trainer["numNodes"], 2)
+        self.assertEqual(llama_trainer["numProcPerNode"], 1)
+        self.assertEqual(llama["jobTemplate"]["spec"]["goodputMeasurement"]["logProfileRef"],
+                         "megatron-training")
+        alltoall_args = by_variant["nccl-alltoall"]["spec"]["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"]
+        self.assertIn("/usr/local/bin/alltoall_perf_mpi", alltoall_args)
+        self.assertIn("NCCL_IB_HCA==rocep1s0f1:1,roceP2p1s0f1:1", alltoall_args)
         for rail in ["a", "b", "both"]:
             with self.subTest(rail=rail):
                 wf = render.configure(base, self.options("--rail", rail))
@@ -163,6 +179,16 @@ class GB10Test(unittest.TestCase):
                         os.environ["NVCRECTL"], "workflow", "render", str(path),
                         "--nodes-file", str(nodes), "--output", "json"], text=True))
                     self.assert_contract(decoded, rail)
+
+        diagnose = json.loads(subprocess.check_output([
+            os.environ["NVCRECTL"], "certification", "render", "--platform", "onprem", "--output", "json",
+            str(Path(__file__).with_name("certification-diagnose.json"))], text=True))
+        self.assertEqual(len(diagnose), 1)
+        diagnose_spec = diagnose[0]["spec"]["orchestration"]["diagnose"]
+        self.assertEqual(diagnose_spec["minGroupSize"], 2)
+        self.assertNotIn("topologyKey", diagnose_spec)
+        self.assertNotIn("NCCL_MNNVL_ENABLE=1",
+                         diagnose[0]["spec"]["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"])
 
 
 if __name__ == "__main__":

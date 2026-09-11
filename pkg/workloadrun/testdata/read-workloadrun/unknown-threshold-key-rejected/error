@@ -1,1 +1,1 @@
-workloadrun wr-typo: unknown threshold key(s) [avgTFLOPSPerGPU]; valid keys: [busBandwidthGBps, algBandwidthGBps, goodputRatio, avgTFLOPsPerGPU, avgStepTimeSec]
+workloadrun wr-typo: unknown threshold key(s) [avgTFLOPSPerGPU]; valid keys: [busBandwidthGBps, algBandwidthGBps, goodputRatio, avgTFLOPsPerGPU, avgStepTimeSec, c2cCPUToGPUBandwidthGBps, c2cGPUToCPUBandwidthGBps, c2cVerified]

@@ -322,6 +322,13 @@ func TestPrintReport(t *testing.T) {
 		TotalNodes: 8,
 		Categories: []CategoryReport{
 			{
+				Domain: "diagnostics", Variant: "gb10-c2c", Status: statusSucceeded,
+				C2C: []C2CRow{{
+					Direction: nvcrev1alpha1.C2CDirectionCPUToGPU, MemoryType: "managed",
+					Size: "1 GB", Bandwidth: "91.25 GB/s", Latency: "735.42 us", Samples: 5, Verified: true,
+				}},
+			},
+			{
 				Domain:  testDomainTraining,
 				Variant: testVariantNemotron,
 				Status:  statusSucceeded,
@@ -363,6 +370,9 @@ func TestPrintReport(t *testing.T) {
 	assert.Contains(t, output, "gcp")
 	assert.Contains(t, output, "H100")
 	assert.Contains(t, output, "8")
+	assert.Contains(t, output, "CPU-GPU C2C:")
+	assert.Contains(t, output, "cpuToGPU/managed")
+	assert.Contains(t, output, "91.25 GB/s")
 
 	// Check category cards.
 	assert.Contains(t, output, "training/nemotron")
@@ -381,7 +391,7 @@ func TestPrintReport(t *testing.T) {
 
 	// Check summary.
 	assert.Contains(t, output, "Summary")
-	assert.Contains(t, output, "2/2 passed")
+	assert.Contains(t, output, "3/3 passed")
 	assert.Contains(t, output, "PASSED")
 }
 

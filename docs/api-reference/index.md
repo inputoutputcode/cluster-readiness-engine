@@ -16,6 +16,7 @@ The NVIDIA Cluster Readiness Engine defines the following custom resources under
 | [WorkloadRun](./workloadrun.md) | Namespaced | Simplified ad-hoc workload API |
 | [GoodputMeasurement](./goodput-measurement.md) | Namespaced | Log-based training throughput measurement |
 | [BandwidthMeasurement](./bandwidth-measurement.md) | Namespaced | NCCL bandwidth measurement |
+| [C2CMeasurement](./c2c-measurement.md) | Namespaced | CPU-GPU coherent-memory bandwidth, latency, and correctness |
 | [LogProfile](./logprofile.md) | Cluster-scoped | Regex patterns for log parsing |
 
 ## Field reference

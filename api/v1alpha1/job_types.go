@@ -224,11 +224,18 @@ type JobSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="bandwidthMeasurement is immutable"
 	BandwidthMeasurement *BandwidthMeasurementConfig `json:"bandwidthMeasurement,omitempty"`
 
+	// c2cMeasurement configures automatic collection of CPU-GPU coherent-memory
+	// bandwidth, latency, and correctness results from worker logs.
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="c2cMeasurement is immutable"
+	C2CMeasurement *C2CMeasurementConfig `json:"c2cMeasurement,omitempty"`
+
 	// thresholds maps metric names to CEL expressions for performance validation.
 	// Propagated from WorkflowSpec.Validation.Performance.Thresholds by the
 	// Workflow controller during Job creation. The Job controller evaluates them
 	// after workload success and sets ValidationFailed if any threshold is violated.
-	// Keys: "busBandwidthGBps", "goodputRatio", "avgTFLOPsPerGPU", "avgStepTimeSec", etc.
+	// Keys include "busBandwidthGBps", "goodputRatio", "avgTFLOPsPerGPU",
+	// "avgStepTimeSec", and the C2C direction bandwidth metrics.
 	// Values: CEL expressions using `value` variable, e.g. "value >= 900"
 	// +optional
 	Thresholds map[string]string `json:"thresholds,omitempty"`
@@ -259,6 +266,13 @@ type BandwidthMeasurementConfig struct {
 	// Propagated to the BandwidthMeasurement spec for Prometheus metric labeling.
 	// +optional
 	TestType string `json:"testType,omitempty"`
+}
+
+// C2CMeasurementConfig configures automatic creation of a C2CMeasurement.
+type C2CMeasurementConfig struct {
+	// sampleInterval is how often worker logs are sampled. Default: 60s.
+	// +optional
+	SampleInterval *metav1.Duration `json:"sampleInterval,omitempty"`
 }
 
 // JobStatus defines the observed state of Job.

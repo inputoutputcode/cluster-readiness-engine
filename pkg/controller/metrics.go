@@ -4,8 +4,12 @@
 package controller
 
 import (
+	"strconv"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	nvcrev1alpha1 "github.com/NVIDIA/cluster-readiness-engine/api/v1alpha1"
 )
 
 // Metric labels
@@ -225,6 +229,20 @@ var (
 		},
 		ncclBandwidthLabels,
 	)
+
+	c2cLabels         = []string{labelNamespace, labelMeasurement, labelJob, labelWorkflow, "direction", "memory_type", "size_bytes"}
+	c2cBandwidthGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{Name: "nvcre_c2c_bandwidth_gbps", Help: "CPU-GPU coherent-memory bandwidth in GB/s"},
+		c2cLabels,
+	)
+	c2cLatencyGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{Name: "nvcre_c2c_latency_microseconds", Help: "CPU-GPU coherent-memory operation latency in microseconds"},
+		c2cLabels,
+	)
+	c2cVerifiedGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{Name: "nvcre_c2c_verified", Help: "CPU-GPU coherent-memory correctness result (1 = verified)"},
+		c2cLabels,
+	)
 )
 
 func init() {
@@ -253,7 +271,32 @@ func init() {
 		topologyFailedNodesGauge,
 		ncclAlgBWGauge,
 		ncclBusBWGauge,
+		c2cBandwidthGauge,
+		c2cLatencyGauge,
+		c2cVerifiedGauge,
 	)
+}
+
+func recordC2CMetrics(namespace, measurement, job, workflow string, results []nvcrev1alpha1.C2CResult) {
+	for _, result := range results {
+		labels := []string{namespace, measurement, job, workflow, result.Direction, result.MemoryType, strconv.FormatInt(result.SizeBytes, 10)}
+		bandwidth, _ := strconv.ParseFloat(result.BandwidthGBps, 64)
+		latency, _ := strconv.ParseFloat(result.LatencyUs, 64)
+		verified := 0.0
+		if result.Verified {
+			verified = 1
+		}
+		c2cBandwidthGauge.WithLabelValues(labels...).Set(bandwidth)
+		c2cLatencyGauge.WithLabelValues(labels...).Set(latency)
+		c2cVerifiedGauge.WithLabelValues(labels...).Set(verified)
+	}
+}
+
+func cleanupC2CMetrics(namespace, measurement, job string) {
+	labels := prometheus.Labels{labelNamespace: namespace, labelMeasurement: measurement, labelJob: job}
+	c2cBandwidthGauge.DeletePartialMatch(labels)
+	c2cLatencyGauge.DeletePartialMatch(labels)
+	c2cVerifiedGauge.DeletePartialMatch(labels)
 }
 
 // recordJobStatus updates the job status gauge for the given job.

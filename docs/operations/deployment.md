@@ -209,7 +209,7 @@ The controller's ClusterRole (`nvcre-manager-role`) is scoped to the resource ty
 
 | Resource | Verbs | Purpose |
 |----------|-------|---------|
-| `nvcre.nvidia.com/*` (Certifications, Workflows, Jobs, GoodputMeasurements, BandwidthMeasurements, WorkloadRuns) + `/status`, `/finalizers` | full lifecycle | Reconcile the CRD hierarchy |
+| `nvcre.nvidia.com/*` (Certifications, Workflows, Jobs, GoodputMeasurements, BandwidthMeasurements, C2CMeasurements, WorkloadRuns) + `/status`, `/finalizers` | full lifecycle | Reconcile the CRD hierarchy and measurements |
 | `nvcre.nvidia.com` LogProfiles | get, list, watch | Read log-parsing profiles |
 | `nodes`, `pods` | get, list, watch | Discover nodes for scheduling and health checks; track workload pod placement |
 | `pods/log` | get | Read training logs for goodput and bandwidth measurement |

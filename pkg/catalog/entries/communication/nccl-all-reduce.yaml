@@ -171,7 +171,9 @@ orchestration:
 {{- else if eq .TestScale "diagnose" }}
   diagnose:
     minGroupSize: {{ .MinGroupSize }}
+{{- if ne .GPUArchitecture "gb10" }}
     topologyKey: nvidia.com/gpu.clique
+{{- end }}
 {{- end }}
 {{- if gt .MaxConcurrent 0 }}
   execution:

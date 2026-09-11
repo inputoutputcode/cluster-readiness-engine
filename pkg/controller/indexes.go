@@ -28,7 +28,7 @@ const (
 	pvClaimRefIndexField = "spec.claimRef"
 
 	// measurementJobRefIndexField indexes GoodputMeasurements and
-	// BandwidthMeasurements by the Job they measure.
+	// BandwidthMeasurements and C2CMeasurements by the Job they measure.
 	measurementJobRefIndexField = "spec.jobRef.name"
 )
 
@@ -95,6 +95,17 @@ func RegisterFieldIndexes(ctx context.Context, indexer client.FieldIndexer) erro
 			return []string{m.Spec.JobRef.Name}
 		}); err != nil {
 		return fmt.Errorf("registering BandwidthMeasurement jobRef index: %w", err)
+	}
+
+	if err := indexer.IndexField(ctx, &nvcrev1alpha1.C2CMeasurement{}, measurementJobRefIndexField,
+		func(obj client.Object) []string {
+			m, ok := obj.(*nvcrev1alpha1.C2CMeasurement)
+			if !ok || m.Spec.JobRef.Name == "" {
+				return nil
+			}
+			return []string{m.Spec.JobRef.Name}
+		}); err != nil {
+		return fmt.Errorf("registering C2CMeasurement jobRef index: %w", err)
 	}
 
 	return nil

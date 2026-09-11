@@ -1,0 +1,7 @@
+{
+  "algBandwidthGBps": 22.36,
+  "busBandwidthGBps": 22.36,
+  "c2cCPUToGPUBandwidthGBps": 91.25,
+  "c2cGPUToCPUBandwidthGBps": 82.5,
+  "c2cVerified": 1
+}

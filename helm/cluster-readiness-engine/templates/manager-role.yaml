@@ -66,6 +66,7 @@ rules:
   - nvcre.nvidia.com
   resources:
   - bandwidthmeasurements
+  - c2cmeasurements
   - certifications
   - goodputmeasurements
   - jobs
@@ -83,6 +84,7 @@ rules:
   - nvcre.nvidia.com
   resources:
   - bandwidthmeasurements/finalizers
+  - c2cmeasurements/finalizers
   - certifications/finalizers
   - goodputmeasurements/finalizers
   - jobs/finalizers
@@ -94,6 +96,7 @@ rules:
   - nvcre.nvidia.com
   resources:
   - bandwidthmeasurements/status
+  - c2cmeasurements/status
   - certifications/status
   - goodputmeasurements/status
   - jobs/status

@@ -36,6 +36,9 @@ func TestCollectJobMeasuredValues(t *testing.T) {
 			AvgStepTimeSec  string `yaml:"avgStepTimeSec"`
 			BusBW           string `yaml:"busBW"`
 			AlgBW           string `yaml:"algBW"`
+			C2CComplete     bool   `yaml:"c2cComplete"`
+			CPUToGPUBW      string `yaml:"cpuToGPUBW"`
+			GPUToCPUBW      string `yaml:"gpuToCPUBW"`
 		}
 		if err := yaml.Unmarshal([]byte(tc.Inputs["input.yaml"]), &in); err != nil {
 			return err
@@ -74,6 +77,17 @@ func TestCollectJobMeasuredValues(t *testing.T) {
 			},
 		}
 		job := &nvcrev1alpha1.Job{Name: "j", Namespace: "ns"}
+		cm := &nvcrev1alpha1.C2CMeasurement{
+			Name: "j-c2c", Namespace: "ns",
+			Spec: nvcrev1alpha1.C2CMeasurementSpec{JobRef: jobRef},
+			Status: nvcrev1alpha1.C2CMeasurementStatus{Results: []nvcrev1alpha1.C2CResult{
+				{Direction: nvcrev1alpha1.C2CDirectionCPUToGPU, MemoryType: testC2CMemoryManaged, SizeBytes: 1 << 30, BandwidthGBps: in.CPUToGPUBW, Samples: 1, Verified: true},
+				{Direction: nvcrev1alpha1.C2CDirectionGPUToCPU, MemoryType: testC2CMemoryManaged, SizeBytes: 1 << 30, BandwidthGBps: in.GPUToCPUBW, Samples: 1, Verified: true},
+			}},
+		}
+		if in.C2CComplete {
+			cm.Status.Conditions = []metav1.Condition{{Type: nvcrev1alpha1.C2CMeasurementComplete, Status: metav1.ConditionTrue}}
+		}
 
 		gmIndex := func(obj client.Object) []string {
 			return []string{obj.(*nvcrev1alpha1.GoodputMeasurement).Spec.JobRef.Name}
@@ -81,10 +95,14 @@ func TestCollectJobMeasuredValues(t *testing.T) {
 		bmIndex := func(obj client.Object) []string {
 			return []string{obj.(*nvcrev1alpha1.BandwidthMeasurement).Spec.JobRef.Name}
 		}
+		cmIndex := func(obj client.Object) []string {
+			return []string{obj.(*nvcrev1alpha1.C2CMeasurement).Spec.JobRef.Name}
+		}
 		c := fake.NewClientBuilder().WithScheme(scheme).
 			WithIndex(&nvcrev1alpha1.GoodputMeasurement{}, measurementJobRefIndexField, gmIndex).
 			WithIndex(&nvcrev1alpha1.BandwidthMeasurement{}, measurementJobRefIndexField, bmIndex).
-			WithObjects(gm, bm, job).Build()
+			WithIndex(&nvcrev1alpha1.C2CMeasurement{}, measurementJobRefIndexField, cmIndex).
+			WithObjects(gm, bm, cm, job).Build()
 
 		values := collectJobMeasuredValues(context.Background(), c, job)
 

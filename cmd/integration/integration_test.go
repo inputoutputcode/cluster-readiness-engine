@@ -297,6 +297,13 @@ func copyStatus(dst, src client.Object) bool { //nolint:gocyclo
 			d.Status = s.Status
 			return true
 		}
+	case *nvcrev1alpha1.C2CMeasurement:
+		s := src.(*nvcrev1alpha1.C2CMeasurement)
+		if len(s.Status.Conditions) > 0 || len(s.Status.Results) > 0 ||
+			s.Status.StartTime != nil || s.Status.CompletionTime != nil {
+			d.Status = s.Status
+			return true
+		}
 	case *corev1.Pod:
 		s := src.(*corev1.Pod)
 		if s.Status.Phase != "" {
@@ -412,6 +419,13 @@ func startManager(
 	require.NoError(t, err)
 
 	err = (&controller.BandwidthMeasurementReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		LogFetcher: fetcher,
+	}).SetupWithManager(mgr)
+	require.NoError(t, err)
+
+	err = (&controller.C2CMeasurementReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		LogFetcher: fetcher,
@@ -631,6 +645,8 @@ func waitForCondition(t *testing.T, c client.Client, cfg waitConfig) {
 		case *nvcrev1alpha1.GoodputMeasurement:
 			return hasConditionWithReason(o.Status.Conditions, cfg.WaitFor.Condition, reason)
 		case *nvcrev1alpha1.BandwidthMeasurement:
+			return hasConditionWithReason(o.Status.Conditions, cfg.WaitFor.Condition, reason)
+		case *nvcrev1alpha1.C2CMeasurement:
 			return hasConditionWithReason(o.Status.Conditions, cfg.WaitFor.Condition, reason)
 		}
 		return false
@@ -898,6 +914,12 @@ func getObject(ctx context.Context, t *testing.T, c client.Client, spec collectS
 			return nil
 		}
 		return obj
+	case "C2CMeasurement":
+		obj := &nvcrev1alpha1.C2CMeasurement{}
+		if err := c.Get(ctx, key, obj); err != nil {
+			return nil
+		}
+		return obj
 	case "PersistentVolumeClaim":
 		obj := &corev1.PersistentVolumeClaim{}
 		if err := c.Get(ctx, key, obj); err != nil {
@@ -1088,6 +1110,10 @@ func sanitizeObject(obj client.Object) {
 			o.Status.PendingInterruption.TInterrupt = nil
 		}
 	case *nvcrev1alpha1.BandwidthMeasurement:
+		clearConditionTimestamps(o.Status.Conditions)
+		o.Status.StartTime = nil
+		o.Status.CompletionTime = nil
+	case *nvcrev1alpha1.C2CMeasurement:
 		clearConditionTimestamps(o.Status.Conditions)
 		o.Status.StartTime = nil
 		o.Status.CompletionTime = nil

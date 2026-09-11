@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+minGPUs: 2
+timeoutPerJob: "30m"
+parallelism:
+  default:
+    tp: 1
+    pp: 1

@@ -26,7 +26,10 @@ The GB200/GB300 on-prem overrides do not match GB10.
 
 Add a reusable multi-resource Certification option and an on-prem GB10 catalog
 profile based on the settings validated on the two-node Spark cluster. Keep the
-Workflow overlay for single-rail diagnosis.
+Workflow overlay for single-rail diagnosis. Add a dedicated C2C measurement and
+per-node GB10 C2C category, plus a random-initialized Llama 3.2 1B distributed
+training category so the recommended suite covers hardware-local coherent
+memory, collectives, and end-to-end training goodput.
 
 ## Implementation
 
@@ -65,6 +68,16 @@ The local prototype under `tools/gb10/` provides:
 8. A one-second BandwidthMeasurement sampling interval. The live two-node test
    completed before the catalog's 30-second interval and its launcher pod was
    cleaned up before any bandwidth rows were captured.
+9. A `C2CMeasurement` controller and `diagnostics/gb10-c2c` category. The
+   benchmark validates managed and mapped pinned memory in both directions and
+   reports bandwidth, latency, sample count, and correctness through the CRD,
+   Prometheus, thresholds, and `nvcrectl certification report`.
+10. A `training/llama32-1b` category using the published Llama 3.2 1B shape,
+    random initialization, synthetic tokens, BF16, DDP, and the existing
+    Megatron log format for goodput collection without model or dataset access.
+11. A recommended four-category Certification and a separate 4-8-node
+    diagnose Certification. Diagnose retains `minGroupSize: 2`; its MNNVL-only
+    comparison is skipped because GB10 has NVLink-C2C, not Multi-Node NVLink.
 
 The source Certification is now the primary object to apply. The controller
 resolves its GB10 catalog override into the same site-specific worker and MPI

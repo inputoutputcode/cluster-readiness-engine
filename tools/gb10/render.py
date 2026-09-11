@@ -20,9 +20,13 @@ def named(items, name):
 
 
 def configure(workflows, args):
-    if len(workflows) != 1 or workflows[0].get("kind") != "Workflow":
-        raise ValueError("expected one rendered all-reduce Workflow")
-    wf = copy.deepcopy(workflows[0])
+    matches = [workflow for workflow in workflows
+               if workflow.get("kind") == "Workflow"
+               and workflow.get("spec", {}).get("jobTemplate", {}).get("spec", {})
+                   .get("bandwidthMeasurement", {}).get("testType") == "all_reduce"]
+    if len(matches) != 1:
+        raise ValueError(f"expected one rendered all-reduce Workflow, found {len(matches)}")
+    wf = copy.deepcopy(matches[0])
     spec = wf["spec"]
     if spec.get("overrides"):
         raise ValueError("render platform overrides before applying the GB10 overlay")

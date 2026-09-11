@@ -563,7 +563,7 @@ func (r *GoodputMeasurementReconciler) handleRunning(ctx context.Context, measur
 		Type:               nvcrev1alpha1.GoodputMeasurementMeasuring,
 		Status:             metav1.ConditionTrue,
 		Reason:             "JobRunning",
-		Message:            "Referenced Job is running, measurement in progress",
+		Message:            measurementInProgressMessage,
 		ObservedGeneration: measurement.Generation,
 	})
 

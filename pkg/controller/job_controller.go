@@ -43,6 +43,7 @@ import (
 )
 
 const (
+	nvcreAPIGroup = "nvcre.nvidia.com"
 	// kindJob is the Kind value for Job object references.
 	kindJob = "Job"
 
@@ -322,6 +323,11 @@ func (r *JobReconciler) reconcileWorkload(ctx context.Context, job *nvcrev1alpha
 			logf.FromContext(ctx).Error(err, "Failed to ensure BandwidthMeasurement")
 			r.warnf(job, ReasonMeasurementCreationError,
 				"Failed to ensure BandwidthMeasurement: %v", err)
+		}
+		if err := r.ensureC2CMeasurement(ctx, job); err != nil {
+			logf.FromContext(ctx).Error(err, "Failed to ensure C2CMeasurement")
+			r.warnf(job, ReasonMeasurementCreationError,
+				"Failed to ensure C2CMeasurement: %v", err)
 		}
 		return r.updateStatusFromWorkload(ctx, job)
 	}
@@ -1403,7 +1409,7 @@ func (r *JobReconciler) ensureGoodputMeasurement(ctx context.Context, job *nvcre
 		return nil // already exists
 	}
 
-	apiGroup := "nvcre.nvidia.com"
+	apiGroup := nvcreAPIGroup
 	gm := &nvcrev1alpha1.GoodputMeasurement{
 		Name:      gmName,
 		Namespace: job.Namespace,
@@ -1459,7 +1465,7 @@ func (r *JobReconciler) ensureBandwidthMeasurement(ctx context.Context, job *nvc
 		return nil // already exists
 	}
 
-	apiGroup := "nvcre.nvidia.com"
+	apiGroup := nvcreAPIGroup
 	bm := &nvcrev1alpha1.BandwidthMeasurement{
 		Name:      bmName,
 		Namespace: job.Namespace,
@@ -1498,6 +1504,39 @@ func (r *JobReconciler) ensureBandwidthMeasurement(ctx context.Context, job *nvc
 		return fmt.Errorf("failed to create BandwidthMeasurement: %w", err)
 	}
 
+	return nil
+}
+
+func (r *JobReconciler) ensureC2CMeasurement(ctx context.Context, job *nvcrev1alpha1.Job) error {
+	if job.Spec.C2CMeasurement == nil {
+		return nil
+	}
+
+	name := naming.Truncate(job.Name+"-c2c", naming.MaxK8sNameLen)
+	existing := &nvcrev1alpha1.C2CMeasurement{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: job.Namespace, Name: name}, existing); err == nil {
+		return nil
+	}
+
+	apiGroup := nvcreAPIGroup
+	m := &nvcrev1alpha1.C2CMeasurement{
+		Name: name, Namespace: job.Namespace,
+		Labels: map[string]string{labelManagedBy: managedByValue, labelJobKey: job.Name},
+		Spec: nvcrev1alpha1.C2CMeasurementSpec{
+			JobRef:         corev1.TypedLocalObjectReference{APIGroup: &apiGroup, Kind: kindJob, Name: job.Name},
+			SampleInterval: job.Spec.C2CMeasurement.SampleInterval,
+		},
+	}
+	if wf := r.getOwnerWorkflow(ctx, job); wf != nil {
+		if err := controllerutil.SetControllerReference(wf, m, r.Scheme); err != nil {
+			return fmt.Errorf("failed to set owner reference on C2CMeasurement: %w", err)
+		}
+	} else if err := controllerutil.SetControllerReference(job, m, r.Scheme); err != nil {
+		return fmt.Errorf("failed to set owner reference on C2CMeasurement: %w", err)
+	}
+	if err := r.Create(ctx, m); err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create C2CMeasurement: %w", err)
+	}
 	return nil
 }
 

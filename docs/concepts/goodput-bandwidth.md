@@ -1,6 +1,6 @@
 ---
-title: Goodput & Bandwidth Measurement
-description: How the NVIDIA Cluster Readiness Engine measures training throughput and network bandwidth.
+title: Goodput, Network & C2C Measurement
+description: How the NVIDIA Cluster Readiness Engine measures training throughput, network bandwidth, and CPU-GPU coherent memory.
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 ---
@@ -39,3 +39,15 @@ Each catalog entry defines expected bandwidth thresholds per GPU architecture. A
 ### Report
 
 `nvcrectl certification report` and `nvcrectl workloadrun report` display measured vs. expected bandwidth with a pass/fail indicator per collective operation.
+
+## CPU-GPU C2C measurement
+
+`C2CMeasurement` is a dedicated measurement type for coherent CPU-GPU memory.
+The GB10 benchmark measures direct GPU access to CPU-initialized memory and CPU
+access to GPU-produced memory using managed and mapped pinned allocations. It
+verifies every transferred byte and records bandwidth and latency by direction,
+allocation type, and size.
+
+This is distinct from MNNVL and NCCL bandwidth. MNNVL is a GPU-to-GPU NVLink
+fabric spanning nodes; GB10 uses NVLink-C2C inside each processor and
+ConnectX-7 RoCE between cluster nodes.

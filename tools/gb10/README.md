@@ -1,7 +1,7 @@
-# Two-node GB10 RoCE test
+# GB10 cluster certification suite
 
-This directory contains the full Certification path for a two-node DGX Spark
-cluster and a lower-level Workflow overlay for single-rail diagnostics. The
+This directory contains the recommended Certification path for a 2-8 node DGX
+Spark cluster and a lower-level Workflow overlay for single-rail diagnostics. The
 Certification path requires the CRD and manager built from `gb10support`; the
 released v0.2.0 manager does not contain the GB10 catalog profile.
 
@@ -27,8 +27,10 @@ sudo k3s ctr images import /tmp/nvcre-manager-gb10.tar
 scp /tmp/nvcre-manager-gb10.tar spark-1ac4:/tmp/
 ssh -t spark-1ac4 'sudo k3s ctr images import /tmp/nvcre-manager-gb10.tar'
 
-kubectl apply \
-  -f helm/cluster-readiness-engine/crds/nvcre.nvidia.com_certifications.yaml
+kubectl apply -f helm/cluster-readiness-engine/crds/nvcre.nvidia.com_certifications.yaml
+kubectl apply -f helm/cluster-readiness-engine/crds/nvcre.nvidia.com_jobs.yaml
+kubectl apply -f helm/cluster-readiness-engine/crds/nvcre.nvidia.com_workflows.yaml
+kubectl apply -f helm/cluster-readiness-engine/crds/nvcre.nvidia.com_c2cmeasurements.yaml
 helm upgrade --install nvcre helm/cluster-readiness-engine \
   --namespace nvcre \
   --create-namespace \
@@ -59,10 +61,13 @@ go build -o bin/nvcrectl ./cmd/nvcrectl/
   --results-file /tmp/gb10-certification.json
 ```
 
-The sample enforces the provisional dual-rail threshold observed during local
-validation: `busBandwidthGBps >= 18`. Change or remove that threshold if the
-site policy differs. Leave the Certification installed to regenerate its
-report later:
+The recommended sample runs four categories: per-node C2C coherent-memory
+validation, dual-rail NCCL all-reduce, dual-rail NCCL all-to-all, and a
+random-initialized Llama 3.2 1B DDP training run. It enforces the provisional
+dual-rail threshold observed during local validation (`busBandwidthGBps >= 18`),
+a C2C sanity floor of 1 GB/s in each direction, and runtime goodput of at least
+0.95. Establish site baselines before tightening the C2C or training thresholds.
+Leave the Certification installed to regenerate its report later:
 
 ```bash
 ./bin/nvcrectl certification report gb10-cert \
@@ -76,8 +81,10 @@ report later:
 - One allocatable NVIDIA GPU on each arm64 node and the RDMA shared plugin.
 - Python 3, kubectl pointing to the two-node cluster, and nvcrectl.
 - An arm64 image containing CUDA support for GB10, compatible NCCL/verbs
-  libraries, `/usr/local/bin/all_reduce_perf_mpi`, `/usr/local/mpi/bin/mpirun`,
-  SSH server/client, and `ibv_devinfo`.
+  libraries, `/usr/local/bin/all_reduce_perf_mpi`,
+  `/usr/local/bin/alltoall_perf_mpi`, `/usr/local/bin/gb10-c2c`, the synthetic
+  Llama workload, `/usr/local/mpi/bin/mpirun`, SSH server/client, and
+  `ibv_devinfo`.
 
 Build nvcrectl from the repository if necessary:
 
@@ -94,7 +101,8 @@ CRD and local manager upgrade shown above. Re-running `setup init` by itself
 would restore the released manager, which does not understand `nicResources`.
 
 The optional Dockerfile builds the MPI NCCL test binary for SM 12.1 using the
-catalog's PyTorch base image. Build on a GB10 node (or an arm64 builder):
+catalog's PyTorch base image. It also builds the C2C CUDA benchmark and installs
+the synthetic Llama training script. Build on a GB10 node (or an arm64 builder):
 
 ```bash
 docker build -t gb10-nccl:local tools/gb10
@@ -180,7 +188,8 @@ Collect status and logs before deleting the run:
 
 ```bash
 kubectl get workflows.nvcre.nvidia.com gb10-a -o yaml
-kubectl get jobs.nvcre.nvidia.com,trainjobs,bandwidthmeasurements.nvcre.nvidia.com
+kubectl get jobs.nvcre.nvidia.com,trainjobs
+kubectl get bandwidthmeasurements.nvcre.nvidia.com,c2cmeasurements.nvcre.nvidia.com
 kubectl get pods -o wide
 kubectl logs POD_NAME -c node
 kubectl get bandwidthmeasurements.nvcre.nvidia.com -o yaml
@@ -232,8 +241,32 @@ NVCRECTL="$PWD/bin/nvcrectl" python3 -m unittest discover -s tools/gb10 -v
 
 The second command also runs all three overlays against the actual catalog
 renderer, checking rank counts, selected resources, SSH port consistency,
-images, host networking, and preservation of NCCL measurement arguments.
-No golden files need regeneration.
+images, host networking, C2C and Llama measurement configuration, and
+preservation of NCCL measurement arguments.
+
+## Diagnose 4-8 nodes
+
+`testScale: diagnose` is useful once at least four GB10 nodes are available.
+The supplied configuration selects all nodes labeled `NVIDIA-GB10`, clamps its
+eight-node maximum to available capacity, and keeps bisection groups at two or
+more nodes so NCCL remains a meaningful oracle with one GPU per node:
+
+```bash
+./bin/nvcrectl certification render \
+  --platform onprem \
+  --dry-run \
+  tools/gb10/certification-diagnose.json
+
+./bin/nvcrectl certification run \
+  --cert-file tools/gb10/certification-diagnose.json \
+  --wait \
+  --timeout 2h \
+  --results-file /tmp/gb10-diagnose.json
+```
+
+MNNVL remains disabled. Diagnose still performs screening, bisection,
+confirmation, and cross-boundary isolation; only its Multi-Node NVLink
+comparison stage is inapplicable to GB10.
 
 References: [NVIDIA NCCL tests](https://github.com/NVIDIA/nccl-tests) and
 [NCCL environment variables](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/env.html).
