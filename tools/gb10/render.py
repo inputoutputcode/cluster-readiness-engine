@@ -27,6 +27,7 @@ def configure(workflows, args):
     if spec.get("overrides"):
         raise ValueError("render platform overrides before applying the GB10 overlay")
     tj = spec["jobTemplate"]["spec"]["workload"]["trainJob"]
+    spec["jobTemplate"]["spec"]["bandwidthMeasurement"]["sampleInterval"] = "1s"
     trainer = tj["trainer"]
     binary = "/usr/local/bin/all_reduce_perf_mpi"
     old_args = trainer["args"]

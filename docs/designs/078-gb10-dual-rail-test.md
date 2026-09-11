@@ -58,6 +58,9 @@ The local prototype under `tools/gb10/` provides:
    a round trip through CRE's typed Workflow decoder. Tests cover resource
    selection, rank counts, networking, SSH ports, images, rejected input,
    and preservation of benchmark arguments.
+8. A one-second BandwidthMeasurement sampling interval. The live two-node test
+   completed before the catalog's 30-second interval and its launcher pod was
+   cleaned up before any bandwidth rows were captured.
 
 The transformed Workflow is the object to apply. Applying the source
 Certification directly would omit the site-specific network configuration.

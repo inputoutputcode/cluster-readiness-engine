@@ -45,6 +45,7 @@ class GB10Test(unittest.TestCase):
 
     def assert_contract(self, wf, rail):
         spec = wf["spec"]
+        self.assertEqual(spec["jobTemplate"]["spec"]["bandwidthMeasurement"]["sampleInterval"], "1s")
         tj = spec["jobTemplate"]["spec"]["workload"]["trainJob"]
         trainer = tj["trainer"]
         self.assertEqual((trainer["numNodes"], trainer["numProcPerNode"]), (2, 1))

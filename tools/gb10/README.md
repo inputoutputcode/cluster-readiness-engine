@@ -127,7 +127,9 @@ released before repeating the commands with `--rail b` and then `--rail both`
 ## Interpret the result
 
 The workload uses two ranks and one GPU per rank, sweeps 8 bytes through 1 GiB,
-and runs 20 iterations with two cycles. Confirm two GB10 ranks, no correctness
+and runs 20 iterations with two cycles. The GB10 overlay samples launcher logs
+every second because this small two-node test can finish before the catalog's
+30-second sampling interval. Confirm two GB10 ranks, no correctness
 errors, `NCCL_NET_PLUGIN set by environment to none`, and internal NET/IB device
 selection on both ranks in the launcher log. CRE records algBW and busBW;
 there is deliberately no unmeasured pass/fail bandwidth threshold.
