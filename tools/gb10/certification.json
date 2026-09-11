@@ -49,7 +49,7 @@
             "limits": {"cpu": "20", "memory": "112Gi"},
             "requests": {"cpu": "8", "memory": "64Gi"}
           },
-          "thresholds": {"goodputRatio": "value >= 0.95"}
+          "thresholds": {"goodputRatio": "value >= 0.80"}
         }
       }
     ]

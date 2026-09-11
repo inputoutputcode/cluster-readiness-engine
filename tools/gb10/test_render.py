@@ -166,6 +166,8 @@ class GB10Test(unittest.TestCase):
                          "--master-addr", "PET_MASTER_ADDR", "--master-port", "PET_MASTER_PORT"]:
             self.assertIn(argument, llama_trainer["args"][0])
         self.assertNotIn("--rdzv-", llama_trainer["args"][0])
+        self.assertEqual(llama["validation"]["performance"]["thresholds"]["thresholds"]["goodputRatio"],
+                         "value >= 0.80")
         self.assertEqual(llama["jobTemplate"]["spec"]["goodputMeasurement"]["logProfileRef"],
                          "megatron-training")
         alltoall_args = by_variant["nccl-alltoall"]["spec"]["jobTemplate"]["spec"]["workload"]["trainJob"]["trainer"]["args"]

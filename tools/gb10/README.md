@@ -66,7 +66,9 @@ validation, dual-rail NCCL all-reduce, dual-rail NCCL all-to-all, and a
 random-initialized Llama 3.2 1B DDP training run. It enforces the provisional
 dual-rail threshold observed during local validation (`busBandwidthGBps >= 18`),
 a C2C sanity floor of 1 GB/s in each direction, and runtime goodput of at least
-0.95. Establish site baselines before tightening the C2C or training thresholds.
+0.80. The lower goodput floor accounts for fixed model and DDP startup overhead
+in the short 50-step smoke run. Establish site baselines before tightening the
+C2C or training thresholds.
 Leave the Certification installed to regenerate its report later:
 
 ```bash
